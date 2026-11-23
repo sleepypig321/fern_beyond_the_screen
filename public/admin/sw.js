@@ -4,7 +4,7 @@ self.addEventListener("push",event=>{
   let data={title:"Fern · Private Inbox",body:"You have a new private message.",url:"/admin/"};
   try{if(event.data)data={...data,...event.data.json()}}catch{}
   const target=(typeof data.url==="string"&&data.url.startsWith("/admin/"))?data.url:"/admin/";
-  event.waitUntil(self.registration.showNotification(data.title,{body:data.body,tag:data.tag||"fern-new-message",icon:"/assets/mushroom-mark.svg",badge:"/assets/mushroom-mark.svg",data:{url:target}}));
+  event.waitUntil(self.registration.showNotification(data.title,{body:data.body,tag:data.tag||"fern-new-message",icon:"/chat/icons/icon-192.png",badge:"/chat/icons/icon-192.png",data:{url:target}}));
 });
 self.addEventListener("notificationclick",event=>{
   event.notification.close();
