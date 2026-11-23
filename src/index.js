@@ -1,6 +1,6 @@
 import { ChatHub } from "./chat.js";
 export { ChatHub };
-const JSON_HEADERS = { "Content-Type": "application/json; charset=utf-8", "Cache-Control": "no-store", "X-Content-Type-Options": "nosniff" };
+const JSON_HEADERS = { "Content-Type": "application/json; charset=utf-8", "Cache-Control": "no-store", "X-Content-Type-Options": "nosniff", "X-Frame-Options": "DENY", "Referrer-Policy": "no-referrer", "Permissions-Policy": "geolocation=(), camera=(), microphone=()" };
 const MAX_PHOTO_BYTES = 3 * 1024 * 1024;
 const MAX_BODY_BYTES = 4 * 1024 * 1024;
 function json(payload, status = 200) {
@@ -30,7 +30,7 @@ function configured(env) {
 }
 function hub(env){return env.CHAT_HUB.getByName("fern-private-chat-v1");}
 function withNoCache(response){
-  const headers=new Headers(response.headers);headers.set("Cache-Control","no-store");
+  const headers=new Headers(response.headers);headers.set("Cache-Control","no-store");headers.set("Referrer-Policy","no-referrer");headers.set("X-Content-Type-Options","nosniff");headers.set("X-Frame-Options","DENY");
   return new Response(response.body,{status:response.status,statusText:response.statusText,headers});
 }
 async function sendEmail(env,recipient,subject,body,attachments=[]){
