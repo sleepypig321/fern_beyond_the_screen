@@ -63,13 +63,27 @@ function showInquiry(id,scroll){
  detail.append(img,info("Contact for invitation",d.email),info("Their interests",d.interests),info("Potential connection",d.connection),info("Their introduction",d.message));
  const ops=node("div","detail-actions");
  if(d.status==="pending")ops.append(btn("Approve and invite","primary",()=>approve(d)),btn("Decline","danger",()=>decline(d)));
+ if(d.status==="declined")ops.append(btn("Send decline email again","outline",()=>decline(d)));
  if(d.status==="approved"&&!d.invite_used)ops.append(btn("Issue new invitation","outline",()=>approve(d)));
  detail.append(ops);
  if(d.status==="approved")detail.append(node("p","meta",d.invite_used?"Registered to chat":"Approved · awaiting registration"));
  if(scroll&&innerWidth<600)detail.scrollIntoView({behavior:"smooth",block:"start"})
 }
+function confirmDecision(title, description, action, destructive=false){
+ const dialog=el("decision-dialog");
+ el("decision-title").textContent=title;
+ el("decision-description").textContent=description;
+ const submit=el("decision-confirm");
+ submit.textContent=action;
+ submit.className=destructive?"danger":"primary";
+ return new Promise(resolve=>{
+  dialog.addEventListener("close",()=>resolve(dialog.returnValue==="confirm"),{once:true});
+  dialog.returnValue="";
+  dialog.showModal();
+ });
+}
 async function approve(d){
- if(!confirm("Approve "+d.name+" and create a private registration link?"))return;
+ if(!await confirmDecision("Approve this introduction?","Create a private registration link for "+d.name+" and try to send it by email.","Approve and invite"))return;
  try{
   const a=await api("admin/inquiries/"+d.id+"/approve","POST",{});
   // Keep the private link visible after refresh.
@@ -82,11 +96,14 @@ async function approve(d){
  }catch(x){toast(x.message)}
 }
 async function decline(d){
- if(!confirm("Decline "+d.name+"? A courteous response will be emailed when email delivery is configured; any existing chat access will be revoked."))return;
+ const retry=d.status==="declined";
+ if(!await confirmDecision(retry?"Send decline email again?":"Decline this introduction?",retry?"Send a courtesy email to "+d.name+" again. Check whether the earlier email arrived before retrying.":"Decline "+d.name+"’s introduction, revoke any existing chat access, and try to send a courtesy email.",retry?"Send email again":"Decline introduction",true))return;
  try{
   const result=await api("admin/inquiries/"+d.id+"/decline","POST",{});
-  selected="";await refresh();blank();
-  toast(result.emailed?"Application declined and a thoughtful email was sent.":"Application declined. Email wasn't sent; configure or check Resend to enable automatic responses.");
+  await refresh();
+  const message=result.emailed?"Decline email accepted by the email provider.":result.emailError||"Introduction declined. The email provider did not accept the message. You can retry here.";
+  if(selected===d.id&&mode==="inquiries")detail.append(node("p","message",message));
+  toast(message);
  }catch(x){toast(x.message)}
 }
 async function showThread(id,scroll){

@@ -225,7 +225,12 @@ export default {
         let emailed=false;
         try{emailed=await sendEmail(env,recipient,"Thank you for your introduction — Fern, Beyond the Screen",body,[],html,{actionUrl:url.origin,actionLabel:"FERN, BEYOND THE SCREEN"});}
         catch(error){console.log("Decline response email error",String(error));}
-        return json({ok:true,emailed});
+        const emailError=emailed?undefined:!emailReady(env)
+          ?"Introduction declined. Email delivery is not configured."
+          :emailJsReady(env)&&!env.EMAILJS_PRIVATE_KEY
+            ?"Introduction declined. Check that EMAILJS_PRIVATE_KEY is set in Cloudflare, then retry."
+            :"Introduction declined. The email provider did not accept the message. Check email delivery settings, then retry.";
+        return json({ok:true,emailed,emailError});
       }
       return withNoCache(response);
     }

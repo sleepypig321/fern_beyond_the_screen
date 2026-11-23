@@ -20,4 +20,15 @@
 <section class="detail-pane" aria-label="Selected item"><div id="detail" class="detail"><div class="empty-state"><img src="/assets/mushroom-mark.svg" alt=""><h2>Choose a letter.</h2><p>Read introductions, approve who can register, or reply to private messages.</p></div></div></section>
 </section>
 </main><div id="app-status" class="toast" role="status" aria-live="polite"></div>
+<dialog id="decision-dialog" class="decision-dialog" aria-labelledby="decision-title" aria-describedby="decision-description">
+<form method="dialog">
+<span class="overline">PRIVATE CORRESPONDENCE</span>
+<h2 id="decision-title"></h2>
+<p id="decision-description"></p>
+<div class="decision-actions">
+<button class="outline" value="cancel" autofocus>Cancel</button>
+<button id="decision-confirm" class="primary" value="confirm">Confirm</button>
+</div>
+</form>
+</dialog>
 <script src="/admin/admin.js" defer></script></body></html>

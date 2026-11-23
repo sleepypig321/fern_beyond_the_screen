@@ -172,6 +172,7 @@ export class ChatHub extends DurableObject {
        const id=action[1],kind=action[2],row=this.rows("SELECT id,name,email,status FROM inquiries WHERE id=?",id)[0];
        if(!row)return err(404,"Inquiry not found.");
        if(kind==="decline"){
+         if(row.status==="declined")return json({ok:true,name:row.name,email:row.email});
          this.db.exec("UPDATE inquiries SET status='declined',invite_hash=NULL,invite_expires=NULL,updated_at=? WHERE id=?",t(),id);
          this.db.exec("UPDATE chat_users SET status='blocked' WHERE id=?",id);
          this.db.exec("DELETE FROM sessions WHERE user_id=?",id);
