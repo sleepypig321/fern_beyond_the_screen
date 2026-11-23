@@ -1,5 +1,6 @@
 name = "fern-beyond-the-screen"
 compatibility_date = "2026-11-22"
+compatibility_flags = ["nodejs_compat"]
 main = "src/index.js"
 
 [assets]
@@ -8,8 +9,6 @@ binding = "ASSETS"
 run_worker_first = ["/api/*"]
 
 # Approval-only private chat: a SQLite-backed Durable Object.
-compatibility_flags = ["nodejs_compat"]
-
 [[durable_objects.bindings]]
 name = "CHAT_HUB"
 class_name = "ChatHub"
