@@ -1,6 +1,6 @@
 import { pbkdf2 } from "node:crypto";
 import { DurableObject } from "cloudflare:workers";
-import webpush from "web-push";
+import { buildPushPayload } from "@block65/webcrypto-web-push";
 
 const json=(o,s=200,headers={})=>new Response(JSON.stringify(o),{status:s,headers:{"Content-Type":"application/json; charset=utf-8","Cache-Control":"no-store","X-Content-Type-Options":"nosniff",...headers}});
 const err=(s,m)=>json({ok:false,error:m},s);
@@ -23,23 +23,22 @@ function validPush(s) {
   }catch{return false}
 }
 const passwordHashPrefix = "pbkdf2-sha256:100000:";
-async function deliverPush(subscription, payload, ttl) {
- const request=webpush.generateRequestDetails(subscription,JSON.stringify(payload),{TTL:ttl});
+async function deliverPush(env, subscription, payload, ttl) {
+ const request=await buildPushPayload({data:payload,options:{ttl}},subscription,{
+  subject:env.VAPID_SUBJECT,
+  publicKey:env.VAPID_PUBLIC_KEY,
+  privateKey:env.VAPID_PRIVATE_KEY
+ });
  const headers=new Headers(request.headers);
  headers.delete("Content-Length");
- return fetch(request.endpoint,{
-  method:request.method,headers,body:request.body,redirect:"error",signal:AbortSignal.timeout(8000)
+ return fetch(subscription.endpoint,{
+  method:"POST",headers,body:request.body,redirect:"error",signal:AbortSignal.timeout(8000)
  });
 }
 async function testPush(env, subscription, url) {
  if(!env.VAPID_PUBLIC_KEY||!env.VAPID_PRIVATE_KEY||!env.VAPID_SUBJECT)return "Push configuration is incomplete.";
  try {
-  webpush.setVapidDetails(env.VAPID_SUBJECT,env.VAPID_PUBLIC_KEY,env.VAPID_PRIVATE_KEY);
- } catch {
-  return "Push keys or contact address are invalid.";
- }
- try {
-  const response=await deliverPush(subscription,{title:"Fern · Notification test",body:"Notifications are reaching this device.",url,tag:"fern-push-test"},60);
+  const response=await deliverPush(env,subscription,{title:"Fern · Notification test",body:"Notifications are reaching this device.",url,tag:"fern-push-test"},60);
   return response.ok?"Test accepted by the push service. Check your device notifications.":"Push service rejected the test (HTTP "+response.status+").";
  } catch(error) {
   console.error("Push test failed",error.name,error.code);
@@ -134,12 +133,10 @@ export class ChatHub extends DurableObject {
  }
  async announce(payload){
   if(!this.env.VAPID_PUBLIC_KEY||!this.env.VAPID_PRIVATE_KEY||!this.env.VAPID_SUBJECT)return;
-  try {webpush.setVapidDetails(this.env.VAPID_SUBJECT,this.env.VAPID_PUBLIC_KEY,this.env.VAPID_PRIVATE_KEY)}
-  catch(e){console.log("Push configuration invalid",String(e));return}
   const subs=this.rows("SELECT endpoint,subscription FROM push_subscriptions");
   await Promise.allSettled(subs.map(async row=>{
     try {
-      const response=await deliverPush(JSON.parse(row.subscription),payload,240);
+      const response=await deliverPush(this.env,JSON.parse(row.subscription),payload,240);
       if([404,410].includes(response.status))this.db.exec("DELETE FROM push_subscriptions WHERE endpoint=?",row.endpoint);
       else if(!response.ok)console.error("Admin push rejected",response.status);
     } catch(error){console.error("Admin push failed",error.name,error.code);}
@@ -147,13 +144,11 @@ export class ChatHub extends DurableObject {
  }
  async announceVisitor(userId){
   if(!this.env.VAPID_PUBLIC_KEY||!this.env.VAPID_PRIVATE_KEY||!this.env.VAPID_SUBJECT)return;
-  try{webpush.setVapidDetails(this.env.VAPID_SUBJECT,this.env.VAPID_PUBLIC_KEY,this.env.VAPID_PRIVATE_KEY)}
-  catch(error){console.log("Visitor push not configured",String(error));return;}
   const subs=this.rows("SELECT endpoint,subscription FROM visitor_push_subscriptions WHERE user_id=?",userId);
   // Intentionally generic notification text; never expose private messages in a lock-screen alert.
   await Promise.allSettled(subs.map(async row=>{
     try {
-      const response=await deliverPush(JSON.parse(row.subscription),{title:"Fern · Private Chat",body:"You have a new private reply.",url:"/chat/",tag:"fern-private-reply"},360);
+      const response=await deliverPush(this.env,JSON.parse(row.subscription),{title:"Fern · Private Chat",body:"You have a new private reply.",url:"/chat/",tag:"fern-private-reply"},360);
       if([404,410].includes(response.status))this.db.exec("DELETE FROM visitor_push_subscriptions WHERE endpoint=?",row.endpoint);
       else if(!response.ok)console.error("Visitor push rejected",response.status);
     } catch(error){console.error("Visitor push failed",error.name,error.code);}
