@@ -145,7 +145,82 @@
 .home-invite p{color:#d0b6ae;font-size:14px;line-height:1.75;max-width:630px;margin-bottom:24px}
 @media(max-width:960px){.site-chapters-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:620px){.site-chapters-grid{grid-template-columns:1fr}.site-chapters-grid a{min-height:0}.home-invite{grid-template-columns:1fr;gap:8px}.home-invite img{width:130px;height:130px}}
-</style></head>
+</style>
+<style>
+/* Ten-photo interactive fanned deck: clean black frames on every portrait */
+.fern-deck-section{padding:clamp(75px,9vw,132px) 0;background:radial-gradient(ellipse at 94% 15%,#7c26364d,transparent 52%),#11080b;border-block:1px solid #cfad873b}
+.fern-deck-section .character-heading{display:flex;justify-content:space-between;align-items:end;gap:34px;margin:39px 0 45px}
+.fern-deck-section .character-heading h2{font:400 clamp(62px,8.5vw,124px)/.81 var(--serif);margin:15px 0 0;letter-spacing:-.04em}
+.fern-deck-section .character-heading h2 em{color:#d7ada9}
+.fern-deck-section .character-heading>p{max-width:355px;font:400 17px/1.65 var(--sans);color:#cfb8b1}
+.fern-deck-layout{display:grid;grid-template-columns:minmax(0,1.08fr) minmax(0,.92fr);border:1px solid #c5a48071;min-height:670px;background:linear-gradient(125deg,#200c13,#170b10 60%,#240e15);box-shadow:0 25px 85px #0008}
+.fern-deck-panel{display:flex;flex-direction:column;min-width:0;border-right:1px solid #c5a48071;padding:clamp(15px,2.4vw,30px);background:radial-gradient(ellipse at 50% 36%,#73313c2d,transparent 60%),#1c0c13}
+.fern-deck-topline,.fern-deck-foot{display:flex;justify-content:space-between;gap:15px;align-items:center;font:600 9px/1.6 var(--sans);letter-spacing:.13em;color:#d4b28c}
+.fern-photo-deck{height:clamp(385px,44vw,545px);position:relative;isolation:isolate;overflow:hidden;margin:24px 0 9px;outline-offset:4px;touch-action:pan-y}
+.fern-photo-deck:before{content:'';position:absolute;inset:3%;border:1px solid #d0a78115;pointer-events:none}
+.fern-photo-card{
+ position:absolute;display:block;width:52%;height:83%;top:9%;left:6%;
+ border:2px solid #000;background:#3a1b26;
+ box-shadow:0 14px 36px #000a;
+ overflow:hidden;opacity:1;
+ transform-origin:55% 85%;
+ transition:left .48s cubic-bezier(.2,.7,.2,1),top .48s cubic-bezier(.2,.7,.2,1),transform .48s cubic-bezier(.2,.7,.2,1),opacity .3s,filter .48s;
+}
+.fern-photo-card[data-position="0"]{left:5%;top:11%;z-index:10;transform:rotate(-2deg) scale(1);filter:none}
+.fern-photo-card[data-position="1"]{left:22%;top:9%;z-index:9;transform:rotate(2deg) scale(.99);filter:brightness(.94)}
+.fern-photo-card[data-position="2"]{left:37%;top:7%;z-index:8;transform:rotate(4deg) scale(.97);filter:brightness(.82)}
+.fern-photo-card[data-position="3"]{left:48%;top:6%;z-index:7;transform:rotate(6deg) scale(.94);filter:brightness(.73)}
+.fern-photo-card[data-position="offstage"]{left:105%;top:14%;opacity:0;visibility:hidden;pointer-events:none;z-index:0;transform:rotate(9deg) scale(.9)}
+.fern-card-fallback{position:absolute;inset:0;display:flex;justify-content:center;align-items:center;flex-direction:column;gap:20px;background:radial-gradient(ellipse at 50% 38%,#d6a8993a,transparent 60%),linear-gradient(140deg,#4b202c,#210f18);border:4px solid #3d141e}
+.fern-photo-card:nth-child(4n+2) .fern-card-fallback{background:radial-gradient(ellipse at 45% 38%,#b86c7b55,transparent 59%),linear-gradient(145deg,#351620,#1a1118)}
+.fern-photo-card:nth-child(4n+3) .fern-card-fallback{background:radial-gradient(ellipse at 58% 36%,#bb8d6a50,transparent 59%),linear-gradient(145deg,#40202d,#1a0d15)}
+.fern-photo-card:nth-child(4n+4) .fern-card-fallback{background:radial-gradient(ellipse at 55% 31%,#d69d9542,transparent 59%),linear-gradient(145deg,#511c29,#200e16)}
+.fern-card-symbol{font:400 clamp(90px,13vw,165px)/1 var(--serif);color:#e4c3aa85;text-shadow:0 6px 18px #14080f80}
+.fern-placeholder-id{font:600 10px var(--sans);letter-spacing:.2em;color:#edd2bc}
+.fern-card-image{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:none}
+.fern-photo-card.has-image .fern-card-image{display:block}
+.fern-photo-card.has-image .fern-card-fallback{display:none}
+.fern-card-corner{position:absolute;top:12px;left:12px;z-index:1;font:600 9px var(--sans);letter-spacing:.12em;color:#fae7d4;text-shadow:0 2px 7px #000;background:#1d0a0e91;padding:5px 7px;border:1px solid #f7ddb44d}
+.fern-deck-controls{display:flex;align-items:center;justify-content:center;gap:25px;padding:9px 0 20px}
+.fern-deck-arrow{height:47px;width:59px;cursor:pointer;background:#471822;border:1px solid #d4ac8d8c;color:#f8dabc;font:400 26px var(--serif);transition:background .2s,border-color .2s,transform .2s}
+.fern-deck-arrow:hover,.fern-deck-arrow:focus-visible{background:#78303d;border-color:#f0d0aa;transform:translateY(-2px)}
+.fern-deck-position{min-width:116px;text-align:center;color:#f0dbc4;font:400 28px/1 var(--serif);font-variant-numeric:tabular-nums}
+.fern-deck-position i{color:#a77d7a;font-style:normal;margin:0 5px}
+.fern-deck-foot{border-top:1px solid #c5a48050;padding-top:15px;color:#bca8a1}
+.fern-deck-info{padding:clamp(30px,4vw,61px);display:flex;flex-direction:column;justify-content:center}
+.fern-deck-info h3{font:400 clamp(56px,5.5vw,83px)/.92 var(--serif);margin:23px 0 26px}
+.fern-deck-info h3 em{color:#dab1a7}
+.fern-deck-info>p{font-size:14px;line-height:1.85;color:#d0b9b2;margin:0 0 20px}
+.fern-deck-frame-note{display:flex;gap:16px;align-items:start;margin:14px 0 29px;padding:17px 0;border-block:1px solid #cba88955}
+.fern-deck-frame-note>span{color:#e1c39e;font-size:27px}
+.fern-deck-frame-note strong{display:block;font:400 22px/1.3 var(--serif);color:#ead3bc}
+.fern-deck-frame-note p{color:#bda6a1;font-size:12px;line-height:1.65;margin-top:6px}
+.fern-deck-link-list{display:grid;gap:11px;margin-top:auto}
+.fern-deck-link-list>span{font:600 10px var(--sans);letter-spacing:.12em;color:#d7b38f;margin-bottom:4px}
+.fern-deck-link-list a{font:400 15px var(--serif);text-decoration:none;color:#efd2b2;border-bottom:1px solid #c5a48045;padding-bottom:9px}
+.fern-deck-link-list a:hover,.fern-deck-link-list a:focus-visible{color:#fff}
+@media(max-width:1010px){
+ .fern-deck-layout{grid-template-columns:1fr}
+ .fern-deck-panel{border-right:0;border-bottom:1px solid #c5a48071}
+ .fern-photo-deck{height:550px;max-width:650px;width:100%;margin:20px auto}
+ .fern-deck-info{padding:30px}
+ .fern-deck-info h3{font-size:64px}
+}
+@media(max-width:650px){
+ .fern-deck-section .character-heading{display:block}
+ .fern-deck-section .character-heading>p{margin-top:23px}
+ .fern-deck-layout{margin-inline:-7px}
+ .fern-deck-panel{padding:15px 12px}
+ .fern-photo-deck{height:390px;margin:15px auto 2px}
+ .fern-photo-card{border:2px solid #000}
+ .fern-deck-topline span:last-child,.fern-deck-foot span:last-child{display:none}
+ .fern-deck-info{padding:27px 22px}
+ .fern-deck-info h3{font-size:58px}
+}
+@media(max-width:395px){.fern-photo-deck{height:350px}.fern-deck-position{min-width:95px}.fern-deck-controls{gap:12px}}
+@media(prefers-reduced-motion:reduce){.fern-photo-card,.fern-deck-arrow{transition:none}}
+</style>
+</head>
 <body>
 <header class="topbar" id="top">
 <a class="wordmark" href="#top" aria-label="Fern, Beyond the Screen — top of page"><svg aria-hidden="true" viewBox="0 0 64 64" fill="none"><path d="M8 51C19 39 25 27 44 7M15 43C8 29 10 17 14 12c5 10 5 20 1 31ZM25 32c-2-15 3-22 12-27 0 12-4 22-12 27ZM31 25c11-8 20-9 26-3-11 6-19 7-26 3ZM17 43c16 1 25 6 29 15-13 0-22-6-29-15Z" stroke="#d5b698" stroke-width="1.9" stroke-linejoin="round"/></svg><span class="w-main">Fern,</span><span class="w-side">Beyond the Screen</span></a>
@@ -155,36 +230,79 @@
 <main>
 <section class="hero" aria-labelledby="hero-title"><div class="shell hero-grid"><div class="hero-copy"><div class="hero-mark">A more personal introduction</div><h1 id="hero-title">Fern,<br><em>Beyond the</em><br><span class="line-two">Screen.</span></h1><div class="hero-divider" aria-hidden="true">♡</div><p class="intro">There's more to a person than a photograph and a few carefully chosen words.</p><p class="underintro">A little mystery. A lot of curiosity. And an invitation to look beyond the usual first impression.</p><div class="hero-actions"><a class="button button-filled" href="/about/">Meet the person ↗</a><a class="button button-outlined" href="/conversation/">Skip the small talk</a></div></div><div class="hero-art"><img src="/assets/amanita.webp" alt="A richly detailed red-and-white Amanita mushroom rising among golden ferns and moss"><span class="hero-star" aria-hidden="true">✧</span><span class="art-caption">Amanita muscaria · A little woodland magic</span></div></div></section>
 
-<section class="character-select" id="character-select" aria-labelledby="character-title">
+<section class="character-select fern-deck-section" id="character-select" aria-labelledby="character-title">
   <div class="shell">
-    <div class="character-topline"><span>CHAPTER 02 / CHARACTER SELECT</span><span>FOUR SIDES OF THE SAME PERSON · ONE FERN</span></div>
-    <div class="character-heading"><div><span class="overline">An interactive portrait gallery</span><h2 id="character-title">Choose your<br><em>Fern.</em></h2></div><p>There isn't just one version of me. Select a chapter to see a different side of my personality. My real photographs will live here.</p></div>
-    <div class="character-console">
-      <div class="character-stage" id="character-stage" data-mode="stargazer">
-        <div class="stage-header"><span>PLAYER ONE</span><span>PERSONAL ARCHIVE / 01</span></div>
-        <div class="stage-portrait" aria-label="Photo gallery portrait space. Photographs have not been added yet.">
-          <div class="stage-orbits" aria-hidden="true"><span></span><span></span><span></span></div>
-          <svg class="stage-silhouette" aria-hidden="true" viewBox="0 0 280 360" fill="none"><circle cx="140" cy="106" r="64" fill="#ead0ae" fill-opacity=".15" stroke="#e2c8a2" stroke-opacity=".5"/><path d="M18 334c6-96 42-150 122-150s116 54 122 150" fill="#d4b18d" fill-opacity=".13" stroke="#e2c8a2" stroke-opacity=".42" stroke-width="2"/><path d="M63 107C65 23 212 17 215 107" stroke="#e2c8a2" stroke-opacity=".42" stroke-width="2"/></svg>
-          <div class="stage-watermark" aria-hidden="true">F</div>
-          <div class="stage-photo-note"><span>THE PORTRAIT COLLECTION</span><strong>Photographs coming soon</strong></div>
+    <div class="character-topline"><span>THE PERSONAL PORTRAIT ARCHIVE</span><span>10 PHOTOGRAPHS · ONE FERN</span></div>
+    <div class="character-heading"><div><span class="overline">A little video-game magic, a lot of real life</span><h2 id="character-title">Choose your<br><em>Fern.</em></h2></div><p>One photo in front. Three waiting behind it. Flip through the collection to see more of me, one frame at a time.</p></div>
+    <div class="fern-deck-layout">
+      <div class="fern-deck-panel">
+        <div class="fern-deck-topline"><span>PERSONAL ARCHIVE</span><span>SELECT PORTRAIT / 10</span></div>
+        <div class="fern-photo-deck" id="photo-deck" tabindex="0" aria-label="Portrait carousel. Use previous or next arrows to view 10 photos.">
+          <div class="fern-photo-card" data-photo-index="0" data-position="0" aria-hidden="false" aria-label="Photo 1 of 10">
+ <div class="fern-card-fallback" aria-hidden="true"><span class="fern-card-symbol">✧</span><span class="fern-placeholder-id">PORTRAIT 01</span></div>
+ <img class="fern-card-image" src="/portraits/gallery-01.webp" alt="Portrait 01 of Fern" loading="eager">
+ <span class="fern-card-corner" aria-hidden="true">F·BTS / 01</span>
+ </div>
+<div class="fern-photo-card" data-photo-index="1" data-position="1" aria-hidden="true" aria-label="Photo 2 of 10">
+ <div class="fern-card-fallback" aria-hidden="true"><span class="fern-card-symbol">✿</span><span class="fern-placeholder-id">PORTRAIT 02</span></div>
+ <img class="fern-card-image" src="/portraits/gallery-02.webp" alt="Portrait 02 of Fern" loading="eager">
+ <span class="fern-card-corner" aria-hidden="true">F·BTS / 02</span>
+ </div>
+<div class="fern-photo-card" data-photo-index="2" data-position="2" aria-hidden="true" aria-label="Photo 3 of 10">
+ <div class="fern-card-fallback" aria-hidden="true"><span class="fern-card-symbol">◇</span><span class="fern-placeholder-id">PORTRAIT 03</span></div>
+ <img class="fern-card-image" src="/portraits/gallery-03.webp" alt="Portrait 03 of Fern" loading="eager">
+ <span class="fern-card-corner" aria-hidden="true">F·BTS / 03</span>
+ </div>
+<div class="fern-photo-card" data-photo-index="3" data-position="3" aria-hidden="true" aria-label="Photo 4 of 10">
+ <div class="fern-card-fallback" aria-hidden="true"><span class="fern-card-symbol">☾</span><span class="fern-placeholder-id">PORTRAIT 04</span></div>
+ <img class="fern-card-image" src="/portraits/gallery-04.webp" alt="Portrait 04 of Fern" loading="eager">
+ <span class="fern-card-corner" aria-hidden="true">F·BTS / 04</span>
+ </div>
+<div class="fern-photo-card" data-photo-index="4" data-position="offstage" aria-hidden="true" aria-label="Photo 5 of 10">
+ <div class="fern-card-fallback" aria-hidden="true"><span class="fern-card-symbol">✧</span><span class="fern-placeholder-id">PORTRAIT 05</span></div>
+ <img class="fern-card-image" src="/portraits/gallery-05.webp" alt="Portrait 05 of Fern" loading="lazy">
+ <span class="fern-card-corner" aria-hidden="true">F·BTS / 05</span>
+ </div>
+<div class="fern-photo-card" data-photo-index="5" data-position="offstage" aria-hidden="true" aria-label="Photo 6 of 10">
+ <div class="fern-card-fallback" aria-hidden="true"><span class="fern-card-symbol">✿</span><span class="fern-placeholder-id">PORTRAIT 06</span></div>
+ <img class="fern-card-image" src="/portraits/gallery-06.webp" alt="Portrait 06 of Fern" loading="lazy">
+ <span class="fern-card-corner" aria-hidden="true">F·BTS / 06</span>
+ </div>
+<div class="fern-photo-card" data-photo-index="6" data-position="offstage" aria-hidden="true" aria-label="Photo 7 of 10">
+ <div class="fern-card-fallback" aria-hidden="true"><span class="fern-card-symbol">◇</span><span class="fern-placeholder-id">PORTRAIT 07</span></div>
+ <img class="fern-card-image" src="/portraits/gallery-07.webp" alt="Portrait 07 of Fern" loading="lazy">
+ <span class="fern-card-corner" aria-hidden="true">F·BTS / 07</span>
+ </div>
+<div class="fern-photo-card" data-photo-index="7" data-position="offstage" aria-hidden="true" aria-label="Photo 8 of 10">
+ <div class="fern-card-fallback" aria-hidden="true"><span class="fern-card-symbol">☾</span><span class="fern-placeholder-id">PORTRAIT 08</span></div>
+ <img class="fern-card-image" src="/portraits/gallery-08.webp" alt="Portrait 08 of Fern" loading="lazy">
+ <span class="fern-card-corner" aria-hidden="true">F·BTS / 08</span>
+ </div>
+<div class="fern-photo-card" data-photo-index="8" data-position="offstage" aria-hidden="true" aria-label="Photo 9 of 10">
+ <div class="fern-card-fallback" aria-hidden="true"><span class="fern-card-symbol">✧</span><span class="fern-placeholder-id">PORTRAIT 09</span></div>
+ <img class="fern-card-image" src="/portraits/gallery-09.webp" alt="Portrait 09 of Fern" loading="lazy">
+ <span class="fern-card-corner" aria-hidden="true">F·BTS / 09</span>
+ </div>
+<div class="fern-photo-card" data-photo-index="9" data-position="offstage" aria-hidden="true" aria-label="Photo 10 of 10">
+ <div class="fern-card-fallback" aria-hidden="true"><span class="fern-card-symbol">✿</span><span class="fern-placeholder-id">PORTRAIT 10</span></div>
+ <img class="fern-card-image" src="/portraits/gallery-10.webp" alt="Portrait 10 of Fern" loading="lazy">
+ <span class="fern-card-corner" aria-hidden="true">F·BTS / 10</span>
+ </div>
         </div>
-        <div class="stage-footer"><span>01 / 04</span><span>F·BTS — PERSONAL EDITION</span></div>
+        <div class="fern-deck-controls">
+          <button type="button" class="fern-deck-arrow" id="photo-previous" aria-label="Previous photo">←</button>
+          <span id="photo-position" class="fern-deck-position" role="status" aria-live="polite">01 <i>/</i> 10</span>
+          <button type="button" class="fern-deck-arrow" id="photo-next" aria-label="Next photo">→</button>
+        </div>
+        <div class="fern-deck-foot"><span>THIN BLACK FRAMES · TEN PORTRAITS</span><span>CLICK AN ARROW TO BRING THE NEXT FORWARD</span></div>
       </div>
-      <div class="character-info">
-        <div class="character-info-top"><span>NOW SELECTED</span><span id="character-counter">01 / 04</span></div>
-        <div class="character-info-bio" aria-live="polite">
-          <span class="character-category" id="character-category">THE EXPLORE-THE-UNKNOWN SIDE</span>
-          <h3 id="character-name">The Stargazer.</h3>
-          <p id="character-description">A fascination with astrophysics, consciousness, and questions that refuse to have easy answers. I love conversations that wander somewhere unexpected.</p>
-          <div class="character-detail"><span>LIKELY TO BE THINKING ABOUT</span><strong id="character-detail">The universe, existence, and what comes next.</strong></div>
-        </div>
-        <div class="character-picker" role="group" aria-label="Select a side of Fern">
-          <button class="character-tile active" type="button" data-index="0" aria-pressed="true"><span class="character-tile-art stargazer-art" aria-hidden="true"><span>✧</span></span><span class="tile-text"><small>01 / THE COSMOS</small><strong>Stargazer</strong></span></button>
-          <button class="character-tile" type="button" data-index="1" aria-pressed="false"><span class="character-tile-art wildflower-art" aria-hidden="true"><span>✿</span></span><span class="tile-text"><small>02 / THE GARDEN</small><strong>Wildflower</strong></span></button>
-          <button class="character-tile" type="button" data-index="2" aria-pressed="false"><span class="character-tile-art creator-art" aria-hidden="true"><span>◇</span></span><span class="tile-text"><small>03 / THE IDEAS</small><strong>Creator</strong></span></button>
-          <button class="character-tile" type="button" data-index="3" aria-pressed="false"><span class="character-tile-art unfiltered-art" aria-hidden="true"><span>☾</span></span><span class="tile-text"><small>04 / THE EVERYDAY</small><strong>Unfiltered</strong></span></button>
-        </div>
-        <a id="character-enter" class="character-enter" href="/stargazer/">Enter The Stargazer’s chapter ↗</a><p class="character-hint">Select a portrait card to explore. The photo slots are ready for the pictures Fern chooses to share.</p>
+      <div class="fern-deck-info">
+        <span class="overline">01 / A portrait, not a performance</span>
+        <h3>Beyond the<br><em>first glance.</em></h3>
+        <p>I wanted something more personal than a traditional dating profile—a little corner of the internet where you can see who I am, not just skim an introduction.</p>
+        <p>These are ten spaces for photographs I've chosen to share. The first picture takes the spotlight; three more wait in the stack until you turn the page.</p>
+        <div class="fern-deck-frame-note"><span aria-hidden="true">✧</span><div><strong>A collection of real moments.</strong><p>The portrait slots are ready for my photos. No invented or AI-generated pictures of me.</p></div></div>
+        <div class="fern-deck-link-list"><span>THERE'S MORE THAN THE PHOTOGRAPHS</span><a href="/about/">The person behind the photos ↗</a><a href="/my-world/">Explore my world ↗</a><a href="/connection/">What connection means to me ↗</a></div>
       </div>
     </div>
   </div>
@@ -199,41 +317,48 @@ navigation.querySelectorAll('a').forEach(a=>a.addEventListener('click',()=>{navi
 document.getElementById('year').textContent=new Date().getFullYear();
 </script>
 
+
 <script>
 (function(){
 "use strict";
-  const characters=[
-    {mode:"stargazer",category:"THE EXPLORE-THE-UNKNOWN SIDE",name:"The Stargazer.",description:"A fascination with astrophysics, consciousness, and questions that refuse to have easy answers. I love conversations that wander somewhere unexpected.",detail:"The universe, existence, and what comes next."},
-    {mode:"wildflower",category:"THE QUIET-WONDER SIDE",name:"The Wildflower.",description:"Give me warm sunlight, a field of wildflowers, butterflies, and moths. I notice small details and find beauty in places other people hurry past.",detail:"Moths, nature, sunlight, and beautiful little worlds."},
-    {mode:"creator",category:"THE MAKE-IT-REAL SIDE",name:"The Creator.",description:"My imagination doesn't always stop at the idea. I like turning possibilities into websites, interactive worlds, and unexpected experiments.",detail:"What could exist if I decided to build it?"},
-    {mode:"unfiltered",category:"THE EVERYDAY SIDE",name:"The Unfiltered.",description:"An independent person who loves sweet coffee, cats, a good laugh, and the space to be herself. I take what matters seriously, but don't need everything else to be serious.",detail:"Humor, honest conversation, and being completely myself."}
-  ];
-  const tiles=[...document.querySelectorAll(".character-tile")];
-  const stage=document.getElementById("character-stage");
-  tiles.forEach(function(tile){
-    tile.addEventListener("click",function(){
-      const index=Number(tile.dataset.index);
-      const selected=characters[index];
-      if(!selected) return;
-      stage.dataset.mode=selected.mode;
-      document.getElementById("character-counter").textContent=String(index+1).padStart(2,"0")+" / 04";
-      document.getElementById("character-category").textContent=selected.category;
-      document.getElementById("character-name").textContent=selected.name;
-      document.getElementById("character-description").textContent=selected.description;
-      document.getElementById("character-detail").textContent=selected.detail;
-      stage.querySelector(".stage-footer span").textContent=String(index+1).padStart(2,"0")+" / 04";
-      tiles.forEach(function(other){const active=other===tile;other.classList.toggle("active",active);other.setAttribute("aria-pressed",String(active));});
-    });
+const deck=document.getElementById("photo-deck");
+if(!deck)return;
+const cards=[...deck.querySelectorAll(".fern-photo-card")];
+const position=document.getElementById("photo-position");
+const prev=document.getElementById("photo-previous");
+const next=document.getElementById("photo-next");
+let current=0;
+function draw(){
+  cards.forEach((card,i)=>{
+    const relative=(i-current+cards.length)%cards.length;
+    const visible=relative<4;
+    card.dataset.position=visible?String(relative):"offstage";
+    card.setAttribute("aria-hidden",relative===0?"false":"true");
   });
-
-
-const enter=document.getElementById("character-enter");
-const pageNames=["Stargazer","Wildflower","Creator","Unfiltered"];
-tiles.forEach(function(tile){tile.addEventListener("click",function(){
-const i=Number(tile.dataset.index);
-enter.href="/"+pageNames[i].toLowerCase()+"/";
-enter.textContent="Enter The "+pageNames[i]+"’s chapter ↗";
-});});
+  position.innerHTML=String(current+1).padStart(2,"0")+' <i>/</i> '+String(cards.length).padStart(2,"0");
+  position.setAttribute("aria-label","Portrait "+(current+1)+" of "+cards.length);
+}
+function move(direction){current=(current+direction+cards.length)%cards.length;draw();}
+prev.addEventListener("click",()=>move(-1));
+next.addEventListener("click",()=>move(1));
+deck.addEventListener("keydown",event=>{
+  if(event.key==="ArrowLeft"){event.preventDefault();move(-1);}
+  if(event.key==="ArrowRight"){event.preventDefault();move(1);}
+});
+let xStart=null;
+deck.addEventListener("touchstart",event=>{if(event.touches.length===1)xStart=event.touches[0].clientX;},{passive:true});
+deck.addEventListener("touchend",event=>{
+  if(xStart===null||event.changedTouches.length===0)return;
+  const diff=event.changedTouches[0].clientX-xStart;xStart=null;
+  if(Math.abs(diff)>55)move(diff<0?1:-1);
+},{passive:true});
+cards.forEach(card=>{
+  const img=card.querySelector(".fern-card-image");
+  img.addEventListener("load",()=>{if(img.naturalWidth>0)card.classList.add("has-image");});
+  img.addEventListener("error",()=>card.classList.remove("has-image"));
+  if(img.complete&&img.naturalWidth>0)card.classList.add("has-image");
+});
+draw();
 })();
 </script>
 </body>
