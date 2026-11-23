@@ -1,0 +1,10 @@
+/* Shared mushroom visual mark; matches the site's existing favicon design. */
+.site-logo-mushroom{width:36px;height:36px;display:block;object-fit:contain;flex:0 0 auto}
+.wordmark .site-logo-mushroom{width:36px;height:36px}
+.mini-mush{border:none!important;background:transparent!important}
+.mini-mush .site-logo-mushroom{width:36px;height:36px}
+.mushroom-symbol{display:inline-block;width:1em;height:1em;object-fit:contain;vertical-align:-.16em}
+.hero-star .mushroom-symbol{width:1em;height:1em}
+.fern-card-symbol .mushroom-symbol{filter:drop-shadow(0 8px 13px #0005)}
+.hero-ornament .mushroom-symbol{opacity:.75;max-width:100%;height:auto;aspect-ratio:1}
+.inquiry-side-icon .mushroom-symbol{vertical-align:middle}

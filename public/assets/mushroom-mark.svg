@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="Amanita mushroom">
+  <path d="M7 29C12 16 24 9 32 9s20 7 25 20c-13 7-37 7-50 0Z" fill="#a33140" stroke="#d4b190" stroke-width="2"/>
+  <path d="M27 35c0 8-1 12-4 20h18c-3-8-4-12-4-20" fill="#e7cfb8" stroke="#d4b190" stroke-width="2"/>
+  <circle cx="19" cy="26" r="3.2" fill="#f2dfcb"/>
+  <circle cx="32" cy="18" r="3.2" fill="#f2dfcb"/>
+  <circle cx="44" cy="27" r="3.2" fill="#f2dfcb"/>
+</svg>
