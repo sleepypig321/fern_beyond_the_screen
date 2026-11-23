@@ -4,8 +4,8 @@ An independent, private dating-introduction website for Fern, with a deep burgun
 
 ## Separate pages
 
-- / — landing page with interactive video-game-style character select, four persona cards, and links to all chapters
-- /stargazer/ — the Stardazer personality chapter
+- / — landing page with a fanned, layered 10-photo deck (one photo in front and three behind), arrow navigation, mobile swiping, and links to all chapters
+- /stargazer/ — the Stargazer personality chapter
 - /wildflower/ — the Wildflower personality chapter
 - /creator/ — the Creator personality chapter
 - /unfiltered/ — the Unfiltered personality chapter
@@ -15,17 +15,39 @@ An independent, private dating-introduction website for Fern, with a deep burgun
 - /conversation/ — Conversation starters
 - /inquire/ — Private introduction form with photo
 
-Every page has its own distinct URL, with shared branding and navigation. The homepage character-select tiles preview each personality and the "Enter chapter" link opens its separate page.
+Every page has its own distinct URL, with shared branding and navigation. The homepage gallery is a separate collection of up to ten real photographs, independent of the four personality chapter pages.
 
-## Fern's photographs
+## Fern's photographs — ten-photo gallery
 
-No private photos have been committed. Each character page has an intentional photo placeholder. To activate a portrait, add a file with the exact name:
-- `public/portraits/stargazer.webp`
-- `public/portraits/wildflower.webp`
-- `public/portraits/creator.webp`
-- `public/portraits/unfiltered.webp`
+The homepage has a **stacked photo carousel**, with **one card in front and three fanned behind**. Left/right arrow buttons, arrow keys (when the gallery is focused), and touch swipes cycle through the ten slots, looping back to the beginning. Every card has a **thin, solid 2px black frame**, including the cards in the rear of the stack. The remaining six cards are offstage until their turn.
 
-A little client-side script (`public/portraits.js`) automatically replaces the placeholder when the image exists. These portrait assets are publicly accessible by design: only use photos approved for public viewing. The homepage gallery currently uses stylized character placeholders until photos are provided.
+The homepage accepts photographs at these exact paths:
+
+```
+public/portraits/gallery-01.webp
+public/portraits/gallery-02.webp
+public/portraits/gallery-03.webp
+public/portraits/gallery-04.webp
+public/portraits/gallery-05.webp
+public/portraits/gallery-06.webp
+public/portraits/gallery-07.webp
+public/portraits/gallery-08.webp
+public/portraits/gallery-09.webp
+public/portraits/gallery-10.webp
+```
+
+Photos haven't been supplied yet. The gallery currently shows clearly labeled decorative placeholders, **not AI-generated photographs of Fern**. Adding a WebP image at a listed path automatically replaces that slot's placeholder after deployment. Photos are public site assets: only upload pictures Fern approves for public viewing.
+
+The four optional personality chapter pages have their own additional portrait placeholders, with distinct filenames:
+
+```
+public/portraits/stargazer.webp
+public/portraits/wildflower.webp
+public/portraits/creator.webp
+public/portraits/unfiltered.webp
+```
+
+A client-side script (`public/portraits.js`) automatically replaces a chapter placeholder when its image exists. The chapters are not required for the 10-photo homepage carousel to operate.
 
 ## Private inquiry email + photo attachments
 
