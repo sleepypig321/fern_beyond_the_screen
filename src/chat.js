@@ -96,7 +96,10 @@ export class ChatHub extends DurableObject {
     if(!d||!validId(d.id)||!d.name||!d.email||!d.message||d.age<25||d.age>110||!["image/png","image/jpeg","image/webp"].includes(d.photo_type)||typeof d.photo64!=="string"||d.photo64.length>4200000)return err(400,"Invalid introduction.");
     if(this.rate(request,"new-inquiry",6,3600000))return err(429,"Please try again later.");
     this.db.exec("INSERT INTO inquiries(id,name,email,age,city,interests,connection,message,photo_type,status,created_at,updated_at) VALUES(?,?,?,?,?,?,?,?,?,'pending',?,?)",d.id,d.name,d.email,d.age,d.city,d.interests,d.connection,d.message,d.photo_type,t(),t());
-    await this.ctx.storage.put("photo:"+d.id,d.photo64);
+    // Split large photographs into storage-safe values; the 3 MB attachment remains private.
+    const pieces=Math.ceil(d.photo64.length/96000);
+    await Promise.all(Array.from({length:pieces},(_,i)=>this.ctx.storage.put("photo:"+d.id+":"+i,d.photo64.slice(i*96000,(i+1)*96000))));
+    await this.ctx.storage.put("photo:"+d.id+":length",pieces);
     this.ctx.waitUntil(this.announce({title:"New private introduction",body:"You have a new inquiry to review.",url:"/admin/?inquiries=1",tag:"fern-inquiry"}));
     return json({ok:true,id:d.id});
    }
@@ -126,9 +129,11 @@ export class ChatHub extends DurableObject {
      if(method==="GET"&&photoMatch){
        const id=photoMatch[1],r=this.rows("SELECT photo_type FROM inquiries WHERE id=?",id)[0];
        if(!r)return err(404,"Not found.");
-       const b64=await this.ctx.storage.get("photo:"+id);
-       if(!b64)return err(404,"Photo unavailable.");
-       const raw=atob(b64),bytes=Uint8Array.from(raw,c=>c.charCodeAt(0));
+       const count=await this.ctx.storage.get("photo:"+id+":length");
+       if(!Number.isInteger(count)||count<1||count>48)return err(404,"Photo unavailable.");
+       const parts=await Promise.all(Array.from({length:count},(_,i)=>this.ctx.storage.get("photo:"+id+":"+i)));
+       if(parts.some(p=>typeof p!=="string"))return err(404,"Photo unavailable.");
+       const raw=atob(parts.join("")),bytes=Uint8Array.from(raw,c=>c.charCodeAt(0));
        return new Response(bytes,{headers:{"Content-Type":r.photo_type,"Cache-Control":"private, no-store","X-Content-Type-Options":"nosniff","Content-Security-Policy":"default-src 'none'; sandbox"}});
      }
      const action=path.match(/^\/api\/chat\/admin\/inquiries\/([0-9a-f-]{36})\/(approve|decline)$/);
