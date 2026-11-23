@@ -24,16 +24,31 @@ function validPush(s) {
 }
 const passwordHashPrefix = "pbkdf2-sha256:100000:";
 async function deliverPush(env, subscription, payload, ttl) {
- const request=await buildPushPayload({data:payload,options:{ttl}},subscription,{
-  subject:env.VAPID_SUBJECT,
-  publicKey:env.VAPID_PUBLIC_KEY,
-  privateKey:env.VAPID_PRIVATE_KEY
- });
- const headers=new Headers(request.headers);
- headers.delete("Content-Length");
- return fetch(subscription.endpoint,{
-  method:"POST",headers,body:request.body,redirect:"error",signal:AbortSignal.timeout(8000)
- });
+ const vapid={
+  subject:env.VAPID_SUBJECT.trim(),
+  publicKey:env.VAPID_PUBLIC_KEY.trim(),
+  privateKey:env.VAPID_PRIVATE_KEY.trim()
+ };
+ if(!/^[A-Za-z0-9_-]{87}$/.test(vapid.publicKey)||!/^[A-Za-z0-9_-]{43}$/.test(vapid.privateKey)){
+  throw new Error("Check the VAPID key format in Cloudflare.",{cause:"keys"});
+ }
+ let request;
+ try {
+  request=await buildPushPayload({data:payload,options:{ttl}},subscription,vapid);
+ } catch(error) {
+  console.error("Push request preparation failed",error.name,error.code);
+  throw new Error("The Worker could not encrypt or sign the push request.",{cause:"prepare"});
+ }
+ try {
+  const headers=new Headers(request.headers);
+  headers.delete("Content-Length");
+  return await fetch(subscription.endpoint,{
+   method:"POST",headers,body:Uint8Array.from(request.body).buffer,redirect:"error",signal:AbortSignal.timeout(8000)
+  });
+ } catch(error) {
+  console.error("Push network request failed",error.name,error.code);
+  throw new Error("The Worker could not reach the device push service.",{cause:"network"});
+ }
 }
 async function testPush(env, subscription, url) {
  if(!env.VAPID_PUBLIC_KEY||!env.VAPID_PRIVATE_KEY||!env.VAPID_SUBJECT)return "Push configuration is incomplete.";
@@ -42,7 +57,7 @@ async function testPush(env, subscription, url) {
   return response.ok?"Test accepted by the push service. Check your device notifications.":"Push service rejected the test (HTTP "+response.status+").";
  } catch(error) {
   console.error("Push test failed",error.name,error.code);
-  return "The Worker could not send the push test ("+error.name+").";
+  return ["keys","prepare","network"].includes(error.cause)?error.message:"The Worker could not complete the push test.";
  }
 }
 async function passwordHash(password, salt, storedHash = passwordHashPrefix) {
@@ -159,7 +174,7 @@ export class ChatHub extends DurableObject {
   try{
    // Public: the only side channel is whether Fern is currently available.
    if(method==="GET"&&path==="/api/chat/presence")return json({ok:true,online:this.online()});
-   if(method==="GET"&&path==="/api/chat/config")return json({ok:true,registration:"approval-only",pushReady:Boolean(this.env.VAPID_PUBLIC_KEY&&this.env.VAPID_PRIVATE_KEY&&this.env.VAPID_SUBJECT)});
+   if(method==="GET"&&path==="/api/chat/config")return json({ok:true,registration:"approval-only",pushDiagnostics:true,pushReady:Boolean(this.env.VAPID_PUBLIC_KEY&&this.env.VAPID_PRIVATE_KEY&&this.env.VAPID_SUBJECT)});
    if(method==="POST"&&path==="/api/chat/system/inquiry"){
     const d=await readJson(request);
     if(!d||!validId(d.id)||!d.name||!d.email||!d.message||d.age<25||d.age>110||!["image/png","image/jpeg","image/webp"].includes(d.photo_type)||typeof d.photo64!=="string"||d.photo64.length>4200000)return err(400,"Invalid introduction.");
