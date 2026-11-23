@@ -1,0 +1,25 @@
+name: Verify Cloudflare Worker build
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install dependencies
+        run: npm install --no-audit --no-fund
+      - name: Validate JavaScript and site files
+        run: |
+          node --check src/index.js
+          node --check src/chat.js
+          node --check public/admin/admin.js
+          node --check public/admin/sw.js
+          node --check public/chat/chat.js
+          npm run build
+      - name: Bundle Worker without deploying
+        run: npx wrangler deploy --dry-run --outdir dist/bundle-check
