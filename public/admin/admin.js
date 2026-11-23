@@ -1,0 +1,133 @@
+(()=>{
+"use strict";
+const el=id=>document.getElementById(id);
+const app=el("admin-app"),login=el("admin-login"),actions=el("admin-actions"),list=el("item-list"),detail=el("detail");
+let mode="inquiries",selected="",inquiries=[],threads=[],enabled=false,signedIn=false,installPrompt=null,prevMessages="";
+const api=async(path,method="GET",body)=>{
+ const opts={method,credentials:"same-origin",headers:{Accept:"application/json"}};
+ if(body!==undefined){opts.headers["Content-Type"]="application/json";opts.body=JSON.stringify(body)}
+ const res=await fetch("/api/chat/"+path,opts),data=await res.json().catch(()=>({}));
+ if(!res.ok)throw Error(data.error||"Something went wrong.");
+ return data;
+};
+const node=(tag,cls,text)=>{const n=document.createElement(tag);if(cls)n.className=cls;if(text!==undefined)n.textContent=text;return n};
+const btn=(text,cls,fn)=>{const n=node("button",cls,text);n.type="button";n.addEventListener("click",fn);return n};
+const stamp=ms=>new Date(ms).toLocaleString(undefined,{month:"short",day:"numeric",hour:"numeric",minute:"2-digit"});
+function toast(s){const b=el("app-status");b.textContent=s;b.classList.add("show");clearTimeout(toast.timer);toast.timer=setTimeout(()=>b.classList.remove("show"),5000)}
+function setOnline(online){const b=el("online-button");b.dataset.online=String(online);b.setAttribute("aria-pressed",String(enabled));el("online-label").textContent=online?"Online":enabled?"Reconnecting…":"Offline"}
+async function session(){
+ try{const me=await api("admin/me");signedIn=true;enabled=me.enabled;setOnline(me.online);login.hidden=true;app.hidden=false;actions.hidden=false;await refresh()}
+ catch{signedIn=false;login.hidden=false;app.hidden=true;actions.hidden=true}
+}
+el("login-form").addEventListener("submit",async e=>{e.preventDefault();el("login-status").textContent="";try{await api("admin/login","POST",{password:el("admin-password").value});el("admin-password").value="";await session()}catch(x){el("login-status").textContent=x.message}});
+el("logout").addEventListener("click",async()=>{try{await api("admin/logout","POST",{})}catch{}location.reload()});
+el("online-button").addEventListener("click",async()=>{try{const state=!enabled;const data=await api("admin/availability","POST",{online:state});enabled=state;setOnline(data.online);toast(state?"You are now online.":"You are now offline.")}catch(x){toast(x.message)}});
+el("refresh").addEventListener("click",refresh);
+el("tab-inquiries").addEventListener("click",()=>changeMode("inquiries"));
+el("tab-conversations").addEventListener("click",()=>changeMode("conversations"));
+function blank(){
+ detail.replaceChildren();const shell=node("div","empty-state");
+ const img=node("img");img.src="/assets/mushroom-mark.svg";img.alt="";
+ shell.append(img,node("h2","",mode==="inquiries"?"Choose a letter.":"Private correspondence."),node("p","",mode==="inquiries"?"Read an introduction and decide who can register.":"Select a conversation to reply."));
+ detail.append(shell)
+}
+function changeMode(value){mode=value;selected="";prevMessages="";el("tab-inquiries").classList.toggle("active",value==="inquiries");el("tab-conversations").classList.toggle("active",value==="conversations");el("list-label").textContent=value==="inquiries"?"PRIVATE INTRODUCTIONS":"APPROVED CONVERSATIONS";renderList();blank()}
+function renderList(){
+ list.replaceChildren();const data=mode==="inquiries"?inquiries:threads;
+ if(!data.length){list.append(node("p","empty",mode==="inquiries"?"No introductions yet.":"No registered conversations yet."));return}
+ for(const r of data){
+   const item=btn("","item"+(selected===r.id?" active":""),()=>{selected=r.id;renderList();mode==="inquiries"?showInquiry(r.id,true):showThread(r.id,true)});
+   const header=node("span","row");
+   header.append(node("strong","",r.name),node("small","state",r.status));
+   item.append(header,node("small","",stamp(mode==="inquiries"?r.created_at:r.last_at)),node("span","preview",mode==="inquiries"?r.message:(r.last_message||"No messages yet")));
+   list.append(item)
+ }
+}
+async function refresh(){
+ if(!signedIn)return;
+ try{
+  const [a,b,me]=await Promise.all([api("admin/inquiries"),api("admin/threads"),api("admin/me")]);
+  inquiries=a.inquiries||[];threads=b.threads||[];enabled=me.enabled;setOnline(me.online);
+  el("inquiry-count").textContent=inquiries.filter(x=>x.status==="pending").length;
+  el("thread-count").textContent=threads.length;
+  renderList();
+  if(selected){mode==="inquiries"?showInquiry(selected,false):showThread(selected,false)}
+ }catch(x){toast(x.message)}
+}
+function info(label,value){const box=node("section","info-line");box.append(node("h3","",label),node("p","",value||"—"));return box}
+function showInquiry(id,scroll){
+ const d=inquiries.find(x=>x.id===id);if(!d||mode!=="inquiries")return;
+ detail.replaceChildren();
+ detail.append(node("span","overline","PRIVATE INTRODUCTION"),node("h2","",d.name),node("p","meta",d.age+" years old · "+d.city+" · "+stamp(d.created_at)+" · "+d.status.toUpperCase()));
+ const img=node("img","detail-photo");img.src="/api/chat/admin/inquiries/"+d.id+"/photo";img.loading="lazy";img.alt="Private applicant photograph";
+ detail.append(img,info("Contact for invitation",d.email),info("Their interests",d.interests),info("Potential connection",d.connection),info("Their introduction",d.message));
+ const ops=node("div","detail-actions");
+ if(d.status==="pending")ops.append(btn("Approve and invite","primary",()=>approve(d)),btn("Decline","danger",()=>decline(d)));
+ if(d.status==="approved"&&!d.invite_used)ops.append(btn("Issue new invitation","outline",()=>approve(d)));
+ detail.append(ops);
+ if(d.status==="approved")detail.append(node("p","meta",d.invite_used?"Registered to chat":"Approved · awaiting registration"));
+ if(scroll&&innerWidth<600)detail.scrollIntoView({behavior:"smooth",block:"start"})
+}
+async function approve(d){
+ if(!confirm("Approve "+d.name+" and create a private registration link?"))return;
+ try{
+  const a=await api("admin/inquiries/"+d.id+"/approve","POST",{});
+  // Keep the private link visible after refresh.
+  await refresh();
+  const box=node("div","invite-result");
+  box.append(node("h3","","Registration link"),node("small","",a.emailed?"Invitation sent by email.":"Invitation prepared, but email wasn't sent automatically. Copy and share this link privately."));
+  const input=node("input");input.type="text";input.readOnly=true;input.value=a.inviteUrl;
+  box.append(input,btn("Copy link","outline",async()=>{try{await navigator.clipboard.writeText(input.value);toast("Copied private invitation.")}catch{input.select();toast("Copy the selected link.")}}));
+  detail.append(box);toast("Approved. Only this invite can create their chat account.");
+ }catch(x){toast(x.message)}
+}
+async function decline(d){
+ if(!confirm("Decline "+d.name+"? This will revoke any existing chat access."))return;
+ try{await api("admin/inquiries/"+d.id+"/decline","POST",{});selected="";await refresh();blank();toast("Request declined.")}catch(x){toast(x.message)}
+}
+async function showThread(id,scroll){
+ if(mode!=="conversations"||!threads.some(x=>x.id===id))return;
+ try{
+  const d=await api("admin/threads/"+id+"/messages");
+  if(selected!==id||mode!=="conversations")return;
+  const stampMessages=JSON.stringify(d.messages);
+  if(prevMessages===stampMessages&&detail.querySelector(".chat-compose"))return;
+  prevMessages=stampMessages;
+  detail.replaceChildren();detail.append(node("span","overline","PRIVATE CONVERSATION"),node("h2","",d.user.name),node("p","meta",d.user.status==="active"?"Approved account":"Account disabled"));
+  const log=node("div","chat-messages");log.setAttribute("role","log");
+  for(const msg of d.messages){const bubble=node("div","bubble"+(msg.sender==="admin"?" mine":""));bubble.append(node("div","",msg.body),node("small","",(msg.sender==="admin"?"You":"Visitor")+" · "+stamp(msg.created_at)));log.append(bubble)}
+  if(!d.messages.length)log.append(node("p","empty","No messages yet."));
+  const form=node("form","chat-compose"),area=node("textarea");area.placeholder="Write your private reply…";area.maxLength=1000;area.required=true;area.setAttribute("aria-label","Your reply");
+  const send=node("button","primary","Send reply");send.type="submit";send.disabled=d.user.status!=="active";
+  form.append(area,send);
+  form.addEventListener("submit",async e=>{e.preventDefault();if(!area.value.trim())return;send.disabled=true;try{await api("admin/threads/"+id+"/messages","POST",{message:area.value.trim()});prevMessages="";await showThread(id,false);await refresh()}catch(x){toast(x.message);send.disabled=false}});
+  detail.append(log,form);log.scrollTop=log.scrollHeight;
+  if(scroll&&innerWidth<600)detail.scrollIntoView({behavior:"smooth",block:"start"});
+ }catch(x){toast(x.message)}
+}
+el("push-button").addEventListener("click",async()=>{
+ try{
+  if(!("Notification" in window)||!("serviceWorker" in navigator)||!("PushManager" in window))throw Error("Push notifications aren't supported here.");
+  const data=await api("admin/push-key");
+  if(!data.publicKey)throw Error("Push notifications aren't configured in Cloudflare yet.");
+  const permission=await Notification.requestPermission();
+  if(permission!=="granted")throw Error("Notification permission wasn't granted.");
+  const registration=await navigator.serviceWorker.register("/admin/sw.js",{scope:"/admin/"});
+  await navigator.serviceWorker.ready;
+  const raw=atob(data.publicKey.replace(/-/g,"+").replace(/_/g,"/")+"=".repeat((4-data.publicKey.length%4)%4));
+  const key=Uint8Array.from(raw,c=>c.charCodeAt(0));
+  let subscription=await registration.pushManager.getSubscription();
+  if(!subscription)subscription=await registration.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:key.buffer});
+  await api("admin/push-subscribe","POST",{subscription:subscription.toJSON()});
+  el("push-button").textContent="Notifications on ✓";
+  toast("New inquiries and messages can now notify your phone.");
+ }catch(x){toast(x.message)}
+});
+addEventListener("beforeinstallprompt",e=>{e.preventDefault();installPrompt=e;el("install-prompt").hidden=false});
+el("install-prompt").addEventListener("click",async()=>{if(installPrompt){await installPrompt.prompt();installPrompt=null;el("install-prompt").hidden=true}});
+setInterval(async()=>{if(!signedIn||document.visibilityState!=="visible")return;if(enabled){try{const r=await api("admin/heartbeat","POST",{});setOnline(r.online)}catch{}}await refresh()},18000);
+document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="visible"&&signedIn)refresh()});
+const query=new URLSearchParams(location.search);
+if(query.has("chat")){mode="conversations";selected=query.get("chat");el("tab-inquiries").classList.remove("active");el("tab-conversations").classList.add("active");el("list-label").textContent="APPROVED CONVERSATIONS"}
+session();
+})();
