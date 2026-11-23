@@ -27,22 +27,184 @@
 @media(max-width:390px){.hero h1{font-size:60px}.section h2{font-size:50px}.contact h2{font-size:60px}.hero-art{height:330px}}
 @media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}*,*:before,*:after{animation:none!important;transition:none!important}}
 </style>
+
+<style>
+/* Character-select gallery, fully independent of the business portfolio */
+.character-select{padding:clamp(76px,9vw,132px) 0;background:radial-gradient(ellipse at 92% 6%,#71283555,transparent 55%),#11080b;border-block:1px solid #cfad8738}
+.character-topline,.character-info-top,.stage-header,.stage-footer{display:flex;align-items:center;justify-content:space-between;gap:14px;font:600 10px/1.5 var(--sans);letter-spacing:.16em;color:#dbc2a1}
+.character-topline{padding-bottom:17px;border-bottom:1px solid #d1b38a65}
+.character-heading{display:flex;align-items:end;justify-content:space-between;gap:45px;margin:40px 0 48px}
+.character-heading h2{font:400 clamp(64px,8.2vw,120px)/.78 var(--serif);margin:16px 0 0;letter-spacing:-.035em}
+.character-heading h2 em{color:#ddb5a7}
+.character-heading>p{max-width:330px;font:400 17px/1.7 var(--sans);color:var(--muted)}
+.character-console{display:grid;grid-template-columns:minmax(0,.94fr) minmax(0,1.06fr);border:1px solid #c6a47a75;min-height:620px;background:#190b0f;box-shadow:0 30px 100px #0009}
+.character-stage{padding:22px;display:flex;flex-direction:column;gap:15px;background:linear-gradient(150deg,#311019,#130a10);border-right:1px solid #c6a47a75;transition:background .4s}
+.character-stage[data-mode="wildflower"]{background:linear-gradient(135deg,#35131b,#321c23 54%,#171017)}
+.character-stage[data-mode="creator"]{background:linear-gradient(145deg,#330c1b,#1c131b 60%,#0c0b12)}
+.character-stage[data-mode="unfiltered"]{background:linear-gradient(145deg,#42141b,#1d0c11 70%,#11090b)}
+.stage-portrait{flex:1;position:relative;min-height:440px;overflow:hidden;display:grid;place-items:center;border:1px solid #c8a78669;background:radial-gradient(ellipse at 56% 37%,#e3a98630,transparent 55%),repeating-linear-gradient(95deg,#ffffff02 0 1px,transparent 1px 15px)}
+.stage-portrait:before,.stage-portrait:after{content:'';position:absolute;width:60px;height:60px;border-color:#e8c99c6b;border-style:solid;z-index:2}
+.stage-portrait:before{top:14px;left:14px;border-width:1px 0 0 1px}.stage-portrait:after{bottom:14px;right:14px;border-width:0 1px 1px 0}
+.stage-orbits span{position:absolute;left:50%;top:42%;transform:translate(-50%,-50%) rotate(-18deg);border:1px solid #d9ba9360;border-radius:50%;width:330px;height:330px}
+.stage-orbits span:nth-child(2){width:245px;height:430px;transform:translate(-50%,-50%) rotate(48deg)}
+.stage-orbits span:nth-child(3){width:430px;height:245px;transform:translate(-50%,-50%) rotate(-33deg)}
+.stage-silhouette{position:relative;z-index:1;width:min(72%,320px);opacity:.75;filter:drop-shadow(0 10px 40px #0008)}
+.stage-watermark{position:absolute;top:10%;font:italic 400 280px/.8 var(--serif);color:#e5b9960b;user-select:none;pointer-events:none}
+.stage-photo-note{position:absolute;z-index:2;bottom:34px;left:20px;right:20px;display:grid;gap:7px;text-align:center;text-shadow:0 2px 12px #000}
+.stage-photo-note span{font-size:10px;letter-spacing:.19em;color:#e4cbaa}
+.stage-photo-note strong{font:italic 400 23px/1.2 var(--serif);color:#f1e5d8}
+.stage-portrait.has-photo{background:#170b0d}
+.stage-portrait.has-photo .stage-silhouette,.stage-portrait.has-photo .stage-orbits,.stage-portrait.has-photo .stage-watermark,.stage-portrait.has-photo .stage-photo-note{display:none}
+.stage-user-photo{width:100%;height:100%;object-fit:cover;position:absolute;inset:0}
+.stage-user-photo[hidden]{display:none}
+.character-info{padding:clamp(22px,3.3vw,48px);display:flex;flex-direction:column;min-width:0}
+.character-info-top{padding-bottom:17px;border-bottom:1px solid #c7a77f51}
+.character-info-bio{margin:36px 0 28px;min-height:215px}
+.character-category{font:600 10px var(--sans);letter-spacing:.18em;color:#d6b799}
+.character-info-bio h3{font:400 clamp(42px,5vw,75px)/1 var(--serif);margin:17px 0;color:#f2dfd3}
+.character-info-bio>p{color:#cab9b5;font-size:14px;line-height:1.85;max-width:460px}
+.character-detail{border-top:1px solid #c7a77f42;margin-top:24px;padding-top:18px;display:grid;gap:8px}
+.character-detail span{font:600 10px var(--sans);letter-spacing:.15em;color:#c8aa86}
+.character-detail strong{font:400 italic 20px var(--serif);color:#ead3c2}
+.character-picker{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-top:auto}
+.character-tile{cursor:pointer;color:#f3e1d0;text-align:left;display:flex;align-items:center;gap:12px;padding:8px;background:#2b1218;border:1px solid #c1a5813b;min-width:0;transition:border .2s,transform .2s,background .2s}
+.character-tile:hover,.character-tile:focus-visible{border-color:#d9bb8d;transform:translateY(-2px);outline-offset:3px}
+.character-tile.active{background:#5b1e2b;border-color:#efd1a3;box-shadow:inset 0 0 0 1px #d9bb8d45}
+.character-tile-art{width:58px;height:68px;flex:0 0 58px;display:grid;place-items:center;border:1px solid #d6aa7b63;position:relative}
+.character-tile-art span{font:400 34px var(--serif);color:#f1d5b0}
+.stargazer-art{background:radial-gradient(circle at 60% 28%,#dabf915e,transparent 42%),#251a25}
+.wildflower-art{background:radial-gradient(circle at 56% 52%,#a1516459,transparent 48%),#38202a}
+.creator-art{background:radial-gradient(circle at 34% 35%,#c9b4a352,transparent 43%),#241522}
+.unfiltered-art{background:radial-gradient(circle at 65% 30%,#e2ae9652,transparent 43%),#3e1b22}
+.tile-text{min-width:0;display:grid;gap:6px}.tile-text small{color:#d8bca6;font-size:9px;letter-spacing:.06em}.tile-text strong{font:400 25px/1 var(--serif)}
+.character-hint{font-size:11px;line-height:1.7;color:#a99599;margin-top:16px}
+.inquiry-section{padding:clamp(70px,9vw,136px) 0;background:radial-gradient(ellipse at 9% 2%,#79202d52,transparent 50%),#16090d;border-top:1px solid #c6a47a5c}
+.inquiry-intro{text-align:center;max-width:690px;margin:0 auto 52px}
+.inquiry-intro h2{font:400 clamp(75px,9vw,130px)/.78 var(--serif);margin:19px 0 25px}
+.inquiry-intro p{font:400 18px/1.65 var(--serif);color:#d3bbaf}
+.inquiry-wrap{display:grid;grid-template-columns:minmax(250px,.68fr) minmax(0,1.32fr);border:1px solid #cba98473;max-width:1100px;margin:auto;background:#190c10;box-shadow:0 24px 70px #0008}
+.inquiry-side{background:radial-gradient(ellipse at 40% 30%,#a14a5640,transparent 55%),linear-gradient(140deg,#3d101a,#210d12);padding:clamp(30px,4vw,56px);border-right:1px solid #cba98473;display:flex;flex-direction:column;gap:22px}
+.inquiry-side-icon{font-size:50px;color:#dfbb90}
+.inquiry-side h3{font:400 clamp(36px,4vw,60px)/1 var(--serif);margin:0}.inquiry-side h3 em{color:#e7beac}
+.inquiry-side>p{font-size:14px;line-height:1.85;color:#ead4ce}
+.inquiry-privacy{border-top:1px solid #cca98470;padding-top:24px;margin-top:auto}
+.inquiry-privacy strong{font-size:10px;letter-spacing:.16em;color:#f2cda8}
+.inquiry-privacy p{font-size:12px;line-height:1.8;color:#dac3bb;margin-top:11px}
+.inquiry-form{padding:clamp(25px,4vw,49px);display:grid;gap:21px}
+.form-heading{display:flex;justify-content:space-between;gap:15px;color:#dbc09d;font-size:10px;letter-spacing:.13em;border-bottom:1px solid #cba9845b;padding-bottom:17px}
+.form-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px}
+.inquiry-form label:not(.photo-button):not(.inquiry-consent){display:grid;gap:9px}
+.inquiry-form label span,.photo-label{font-size:12px;color:#ebd8cd;letter-spacing:.03em}
+.inquiry-form b{color:#e3bd92}
+.inquiry-form input:not([type=checkbox]):not([type=file]),.inquiry-form textarea{width:100%;background:#10090c;border:1px solid #bd9b765c;border-radius:0;padding:14px 15px;outline:none;color:#f5e8d9;font:400 14px/1.5 var(--sans);transition:border .2s}
+.inquiry-form textarea{resize:vertical;min-height:85px}
+.inquiry-form input:focus-visible,.inquiry-form textarea:focus-visible{border-color:#e4b993!important;box-shadow:0 0 0 2px #a45b593b}
+.inquiry-form input::placeholder,.inquiry-form textarea::placeholder{color:#998688}
+.photo-input{border:1px dashed #b7987980;background:#3a161d44;padding:20px;display:grid;gap:14px}
+.photo-input p{font-size:12px;color:#bba8a3;line-height:1.7;margin-top:5px}
+.photo-button{padding:11px 15px;background:#64232e;color:#f8e9d6;border:1px solid #dab6939d;cursor:pointer;font-size:12px;letter-spacing:.05em;display:flex;justify-content:space-between;max-width:220px}
+.photo-button:hover{background:#773342}
+.photo-input input[type=file]{position:absolute;width:1px;height:1px;clip-path:inset(50%);overflow:hidden}
+.photo-input:focus-within .photo-button{outline:2px solid #d8b590;outline-offset:3px}
+.photo-preview{display:flex;gap:12px;align-items:center;background:#251217;padding:9px;border:1px solid #bc947062;min-width:0}
+.photo-preview[hidden]{display:none}
+.photo-preview img{width:64px;height:64px;object-fit:cover}
+.photo-preview span{font-size:12px;overflow-wrap:anywhere;min-width:0;flex:1}
+.photo-preview button{border:0;background:transparent;color:#edc7b1;font-size:22px;cursor:pointer}
+.inquiry-consent{display:flex;align-items:start;gap:12px;line-height:1.6;font-size:12px;color:#dcc2b9}
+.inquiry-consent input{accent-color:#b87377;margin-top:5px}
+.inquiry-hp{position:absolute!important;left:-9999px!important;opacity:0;pointer-events:none}
+.form-challenge{min-height:30px;overflow:hidden}
+.inquiry-status{font-size:12px;line-height:1.6;color:#ead5bb;min-height:20px}
+.inquiry-status[data-error="true"]{color:#f1aca9}
+.inquiry-submit{min-height:55px;background:#d7b698;border:1px solid #f1d5b2;color:#2b0e13;font:700 12px var(--sans);letter-spacing:.08em;text-transform:uppercase;cursor:pointer;display:flex;justify-content:space-between;align-items:center;padding:16px 20px;transition:background .2s}
+.inquiry-submit:hover:not([disabled]){background:#f2d3b8}.inquiry-submit[disabled]{cursor:not-allowed;opacity:.5}
+.form-footnote{font-size:11px;color:#a99599;line-height:1.7}
+@media(max-width:1050px){.character-console{grid-template-columns:1fr}.character-stage{border-right:0;border-bottom:1px solid #c6a47a75}.stage-portrait{min-height:400px}.character-info-bio{min-height:0}}
+@media(max-width:780px){.character-heading{display:block}.character-heading>p{margin-top:22px}.character-topline span:last-child{display:none}.inquiry-wrap{grid-template-columns:1fr}.inquiry-side{border-right:0;border-bottom:1px solid #c6a47a75}.inquiry-side>p,.inquiry-privacy{max-width:550px}.inquiry-privacy{margin-top:0}}
+@media(max-width:520px){.character-select{padding:75px 0}.character-heading h2{font-size:76px}.character-console{margin-inline:-7px}.character-stage{padding:13px}.stage-portrait{min-height:345px}.character-info{padding:22px 17px}.character-info-bio h3{font-size:57px}.character-picker{gap:7px}.character-tile{display:grid;padding:7px;gap:9px}.character-tile-art{width:100%;height:80px}.tile-text small{font-size:8px}.tile-text strong{font-size:23px}.form-grid{grid-template-columns:1fr}.inquiry-intro h2{font-size:76px}.inquiry-side{padding:26px}.inquiry-form{padding:24px 18px}.inquiry-wrap{margin-inline:-7px}}
+@media(prefers-reduced-motion:reduce){.character-tile{transition:none}}
+</style>
 </head>
 <body>
 <header class="topbar" id="top">
 <a class="wordmark" href="#top" aria-label="Fern, Beyond the Screen — top of page"><svg aria-hidden="true" viewBox="0 0 64 64" fill="none"><path d="M8 51C19 39 25 27 44 7M15 43C8 29 10 17 14 12c5 10 5 20 1 31ZM25 32c-2-15 3-22 12-27 0 12-4 22-12 27ZM31 25c11-8 20-9 26-3-11 6-19 7-26 3ZM17 43c16 1 25 6 29 15-13 0-22-6-29-15Z" stroke="#d5b698" stroke-width="1.9" stroke-linejoin="round"/></svg><span class="w-main">Fern,</span><span class="w-side">Beyond the Screen</span></a>
 <button class="menu-toggle" type="button" aria-label="Open navigation" aria-controls="navigation" aria-expanded="false">☰</button>
-<nav class="navigation" id="navigation" aria-label="Main navigation"><a href="#about">The Person</a><a href="#curiosities">My World</a><a href="#connection">Connection</a><a href="#conversation">Conversation</a><a class="nav-pill" href="#hello">A Little Hello ↗</a></nav>
+<nav class="navigation" id="navigation" aria-label="Main navigation"><a href="#about">The Person</a><a href="#character-select">Choose Your Fern</a><a href="#connection">Connection</a><a href="#conversation">Conversation</a><a class="nav-pill" href="#hello">Inquire Privately ↗</a></nav>
 </header>
 <main>
 <section class="hero" aria-labelledby="hero-title"><div class="shell hero-grid"><div class="hero-copy"><div class="hero-mark">A more personal introduction</div><h1 id="hero-title">Fern,<br><em>Beyond the</em><br><span class="line-two">Screen.</span></h1><div class="hero-divider" aria-hidden="true">♡</div><p class="intro">There's more to a person than a photograph and a few carefully chosen words.</p><p class="underintro">A little mystery. A lot of curiosity. And an invitation to look beyond the usual first impression.</p><div class="hero-actions"><a class="button button-filled" href="#about">Meet the person ↗</a><a class="button button-outlined" href="#conversation">Skip the small talk</a></div></div><div class="hero-art"><img src="data:image/webp;base64,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" alt="A richly detailed red-and-white Amanita mushroom rising among golden ferns and moss"><span class="hero-star" aria-hidden="true">✧</span><span class="art-caption">Amanita muscaria · A little woodland magic</span></div></div></section>
+
+<section class="character-select" id="character-select" aria-labelledby="character-title">
+  <div class="shell">
+    <div class="character-topline"><span>CHAPTER 02 / CHARACTER SELECT</span><span>FOUR SIDES OF THE SAME PERSON · ONE FERN</span></div>
+    <div class="character-heading"><div><span class="overline">An interactive portrait gallery</span><h2 id="character-title">Choose your<br><em>Fern.</em></h2></div><p>There isn't just one version of me. Select a chapter to see a different side of my personality. My real photographs will live here.</p></div>
+    <div class="character-console">
+      <div class="character-stage" id="character-stage" data-mode="stargazer">
+        <div class="stage-header"><span>PLAYER ONE</span><span>PERSONAL ARCHIVE / 01</span></div>
+        <div class="stage-portrait" aria-label="Photo gallery portrait space. Photographs have not been added yet.">
+          <div class="stage-orbits" aria-hidden="true"><span></span><span></span><span></span></div>
+          <svg class="stage-silhouette" aria-hidden="true" viewBox="0 0 280 360" fill="none"><circle cx="140" cy="106" r="64" fill="#ead0ae" fill-opacity=".15" stroke="#e2c8a2" stroke-opacity=".5"/><path d="M18 334c6-96 42-150 122-150s116 54 122 150" fill="#d4b18d" fill-opacity=".13" stroke="#e2c8a2" stroke-opacity=".42" stroke-width="2"/><path d="M63 107C65 23 212 17 215 107" stroke="#e2c8a2" stroke-opacity=".42" stroke-width="2"/></svg>
+          <div class="stage-watermark" aria-hidden="true">F</div>
+          <div class="stage-photo-note"><span>THE PORTRAIT COLLECTION</span><strong>Photographs coming soon</strong></div>
+        </div>
+        <div class="stage-footer"><span>01 / 04</span><span>F·BTS — PERSONAL EDITION</span></div>
+      </div>
+      <div class="character-info">
+        <div class="character-info-top"><span>NOW SELECTED</span><span id="character-counter">01 / 04</span></div>
+        <div class="character-info-bio" aria-live="polite">
+          <span class="character-category" id="character-category">THE EXPLORE-THE-UNKNOWN SIDE</span>
+          <h3 id="character-name">The Stargazer.</h3>
+          <p id="character-description">A fascination with astrophysics, consciousness, and questions that refuse to have easy answers. I love conversations that wander somewhere unexpected.</p>
+          <div class="character-detail"><span>LIKELY TO BE THINKING ABOUT</span><strong id="character-detail">The universe, existence, and what comes next.</strong></div>
+        </div>
+        <div class="character-picker" role="group" aria-label="Select a side of Fern">
+          <button class="character-tile active" type="button" data-index="0" aria-pressed="true"><span class="character-tile-art stargazer-art" aria-hidden="true"><span>✧</span></span><span class="tile-text"><small>01 / THE COSMOS</small><strong>Stargazer</strong></span></button>
+          <button class="character-tile" type="button" data-index="1" aria-pressed="false"><span class="character-tile-art wildflower-art" aria-hidden="true"><span>✿</span></span><span class="tile-text"><small>02 / THE GARDEN</small><strong>Wildflower</strong></span></button>
+          <button class="character-tile" type="button" data-index="2" aria-pressed="false"><span class="character-tile-art creator-art" aria-hidden="true"><span>◇</span></span><span class="tile-text"><small>03 / THE IDEAS</small><strong>Creator</strong></span></button>
+          <button class="character-tile" type="button" data-index="3" aria-pressed="false"><span class="character-tile-art unfiltered-art" aria-hidden="true"><span>☾</span></span><span class="tile-text"><small>04 / THE EVERYDAY</small><strong>Unfiltered</strong></span></button>
+        </div>
+        <p class="character-hint">Select a portrait card to explore. The photo slots are ready for the pictures Fern chooses to share.</p>
+      </div>
+    </div>
+  </div>
+</section>
 <section class="section intro-section" id="about"><div class="shell"><div class="section-cap"><span class="overline">01 / The person behind the profile</span></div><div class="two-col"><div><h2>Not easily<br><em>summarized.</em></h2><p class="aside">Some people can fit themselves into a neat little box. I've never been particularly good at that.</p></div><div class="body-copy"><p>I'm Fern. I'm independent, curious, creative, and usually in the middle of learning something new. I can be completely absorbed in an ambitious idea one minute and laughing at something ridiculous the next.</p><p>I'm fascinated by how things work: the universe, intelligence, technology, living systems, and the tiny details most people overlook. I love having room to explore an idea without knowing exactly where it will lead.</p><p>Being my own person matters to me. I value the kind of connection where both people can be fully themselves—without a performance, a script, or the expectation that independence and affection must be opposites.</p></div></div></div></section>
 <section class="section interests-section" id="curiosities"><div class="shell"><div class="section-cap"><span class="overline">02 / A few of my worlds</span></div><div class="interests-head"><h2>Things that<br><em>pull me in.</em></h2><p>I'm drawn to beauty, unusual questions, and experiences that make the ordinary world feel unexpectedly vast.</p></div><div class="interests-grid"><article class="interest"><div class="index">I. THE NATURAL WORLD</div><h3>Wildflowers,<br>moths & moss.</h3><p>Golden afternoon light, butterflies, forest details, and all the intricate little systems quietly at work around us.</p></article><article class="interest"><div class="index">II. THE UNKNOWN</div><h3>Stars, space<br>& possibility.</h3><p>Astrophysics, consciousness, and the questions that are fascinating precisely because we don't have all the answers.</p></article><article class="interest"><div class="index">III. THE EVERYDAY</div><h3>Cats, coffee<br>& creative rabbit holes.</h3><p>Sweet coffee, feline company, a little humor, and following an idea until it becomes something entirely unexpected.</p></article></div></div></section>
 <section class="quote-band"><div class="ornament" aria-hidden="true">✧ &nbsp; ♡ &nbsp; ✧</div><blockquote>“I'm always interested in becoming a better version of myself tomorrow than I was today.”</blockquote><div class="byline">— Fern</div></section>
 <section class="section expectations" id="connection"><div class="shell"><div class="section-cap"><span class="overline">03 / Beyond attraction</span></div><div class="two-col"><div><h2>Connection<br><em>without a script.</em></h2><p class="intro-section aside">For me, genuine chemistry starts with being able to show up as yourself.</p></div><div class="values"><article class="value"><h3>Intellectual chemistry.</h3><p>Someone who enjoys a real conversation, can be curious with me, and isn't afraid to consider a different perspective.</p></article><article class="value"><h3>Individuality.</h3><p>I appreciate people with a life of their own, who respect that independence is a strength rather than an absence of care.</p></article><article class="value"><h3>Humor & ease.</h3><p>Being able to laugh together, be a little strange, and enjoy the unplanned moments matters more than sounding impressive.</p></article><article class="value"><h3>Mutual respect.</h3><p>Clear communication, thoughtful boundaries, and genuine interest in understanding one another.</p></article></div></div></div></section>
 <section class="little-things" aria-label="Little things I enjoy"><div class="shell things-grid"><h2>A few little<br><em>things.</em></h2><div class="chips"><span class="chip">✦ Orange-gold sunsets</span><span class="chip">✦ Moths & butterflies</span><span class="chip">✦ A good, strange question</span><span class="chip">✦ Very sweet iced coffee</span><span class="chip">✦ Cats being cats</span><span class="chip">✦ Building imaginary worlds</span><span class="chip">✦ Learning just because</span></div></div></section>
 <section class="questions" id="conversation"><div class="shell question-layout"><div><span class="overline">04 / Beyond the small talk</span><h2>Ask me<br><em>something good.</em></h2><p class="hint">I'd rather start with an interesting question than pretend a standard introduction tells us much about one another.</p></div><div class="qa-list"><details class="qa"><summary>Where would you disappear for a day?</summary><p>Somewhere with wildflowers, butterflies and moths, and late-afternoon sunshine turning everything amber. I think quiet places can be extraordinary.</p></details><details class="qa"><summary>What's a question you keep returning to?</summary><p>What intelligence and consciousness actually are—and how much we still have to discover about both.</p></details><details class="qa"><summary>What could you talk about for hours?</summary><p>An idea worth exploring. It could start with a scientific question, a design concept, or a completely unexpected observation.</p></details><details class="qa"><summary>What's something people don't always expect?</summary><p>That an independent, serious-minded person can also be playful, affectionate in her own way, and very capable of laughing at herself.</p></details></div></div></section>
-<section class="contact" id="hello"><svg class="tiny-mushroom" viewBox="0 0 80 80" fill="none" aria-hidden="true"><path d="M12 38c5-19 18-29 28-29s23 10 28 29c-13 5-43 5-56 0Z" fill="#9e3440" stroke="#e2b694" stroke-width="1.5"/><path d="M35 42c0 9-2 19-5 27h20c-3-8-5-18-5-27M21 41c13 8 26 8 38 0" stroke="#e7c4a4" stroke-width="2"/><path d="m30 22 3 3m12-5 3 4m-17 9 4 2m18-6 3 2" stroke="#ead9c1" stroke-width="4" stroke-linecap="round"/></svg><span class="overline">The conversation starts somewhere</span><h2>Beyond<br><em>“hey.”</em></h2><p>If you found your way here from a dating profile, send me an interesting question there. I promise it's more revealing than a copy-and-paste opener.</p><a class="button button-filled" href="#conversation">Find a conversation starter ↑</a><div class="contact-note"><strong>A little note about this site</strong><p>This is a personal introduction, not a dating app with accounts or public messaging. It doesn't collect visitor information. My direct contact details stay private.</p></div></section>
+
+<section class="inquiry-section" id="hello" aria-labelledby="inquiry-title">
+ <div class="shell">
+  <div class="inquiry-intro"><span class="overline">A more intentional first hello</span><h2 id="inquiry-title">Introduce<br><em>yourself.</em></h2><p>No account. No public messages. Just a private introduction sent to me, with enough to get a sense of the person behind the hello.</p></div>
+  <div class="inquiry-wrap">
+   <div class="inquiry-side"><div class="inquiry-side-icon" aria-hidden="true">✧</div><h3>Beyond a<br><em>first impression.</em></h3><p>Tell me a little about yourself, something you think we'd connect over, and include a recent photo so I know who I'm talking to.</p>
+    <div class="inquiry-privacy"><strong>PRIVATE BY DESIGN</strong><p>Only Fern receives submissions. Your photo is attached to a private email; it isn't displayed on this website or placed in a public gallery. The email provider and recipient's inbox may retain the message.</p></div>
+   </div>
+   <form id="inquiry-form" class="inquiry-form" method="post" action="/api/inquiry" enctype="multipart/form-data">
+    <div class="form-heading"><span>01 / YOUR INTRODUCTION</span><span>18+ ONLY</span></div>
+    <div class="form-grid">
+      <label><span>Your first name <b>*</b></span><input name="first_name" autocomplete="given-name" minlength="2" maxlength="80" placeholder="What should I call you?" required></label>
+      <label><span>Your age <b>*</b></span><input name="age" inputmode="numeric" type="number" min="18" max="110" placeholder="18+" required></label>
+      <label><span>City / region <b>*</b></span><input name="city" autocomplete="address-level2" maxlength="100" placeholder="Just a general area" required></label>
+      <label><span>Your email <b>*</b></span><input name="email" type="email" autocomplete="email" maxlength="254" placeholder="Only for a private reply" required></label>
+    </div>
+    <label><span>A few of your interests <b>*</b></span><textarea name="interests" rows="2" minlength="3" maxlength="400" placeholder="What are you passionate about, or curious to explore?" required></textarea></label>
+    <label><span>What might we connect over? <b>*</b></span><textarea name="connection" rows="2" minlength="3" maxlength="300" placeholder="An idea, a value, an obsession, a shared interest..." required></textarea></label>
+    <label><span>Tell me something about yourself <b>*</b></span><textarea name="message" rows="4" minlength="10" maxlength="1300" placeholder="I'd rather hear something genuine than a polished sales pitch." required></textarea></label>
+    <div class="photo-input"><div><span class="photo-label">Your photo <b>*</b></span><p>One clear, non-explicit photo of yourself. JPG, PNG or WebP, up to 3 MB.</p></div><label class="photo-button" for="inquiry-photo">Choose a photo <span aria-hidden="true">＋</span></label><input id="inquiry-photo" type="file" name="photo" accept="image/jpeg,image/png,image/webp" required><div class="photo-preview" id="photo-preview" hidden><img alt="Preview of the photo you're attaching" id="photo-preview-image"><span id="photo-preview-name"></span><button type="button" id="clear-photo" aria-label="Remove chosen photo">✕</button></div></div>
+    <label class="inquiry-consent"><input type="checkbox" name="consent" value="yes" required><span>I confirm I'm at least 18 and agree to send these details and my photo privately by email to Fern. <b>*</b></span></label>
+    <div class="inquiry-hp" aria-hidden="true"><label>Leave blank <input name="website" tabindex="-1" autocomplete="off"></label></div>
+    <div id="fern-turnstile" class="form-challenge" aria-label="Spam protection"></div>
+    <p id="inquiry-status" role="status" aria-live="polite" class="inquiry-status">Checking whether private inquiries are available…</p>
+    <button id="inquiry-submit" type="submit" class="inquiry-submit" disabled>Send my introduction <span aria-hidden="true">↗</span></button>
+    <p class="form-footnote">Your information is only used to review and reply to your introduction. Nothing you submit is posted publicly.</p>
+   </form>
+  </div>
+ </div>
+</section>
 </main>
 <footer class="site-footer"><span>© <span id="year">2026</span> FERN, BEYOND THE SCREEN</span><span>MADE OF CURIOSITY & A LITTLE MYSTERY</span><a href="#top">Back to the beginning ↑</a></footer>
 <script>
@@ -50,6 +212,104 @@ const menu=document.querySelector('.menu-toggle');const navigation=document.quer
 menu.addEventListener('click',()=>{const open=navigation.classList.toggle('open');menu.setAttribute('aria-expanded',String(open));menu.setAttribute('aria-label',open?'Close navigation':'Open navigation');});
 navigation.querySelectorAll('a').forEach(a=>a.addEventListener('click',()=>{navigation.classList.remove('open');menu.setAttribute('aria-expanded','false');menu.setAttribute('aria-label','Open navigation');}));
 document.getElementById('year').textContent=new Date().getFullYear();
+</script>
+
+<script>
+(function(){
+  "use strict";
+  const characters=[
+    {mode:"stargazer",category:"THE EXPLORE-THE-UNKNOWN SIDE",name:"The Stargazer.",description:"A fascination with astrophysics, consciousness, and questions that refuse to have easy answers. I love conversations that wander somewhere unexpected.",detail:"The universe, existence, and what comes next."},
+    {mode:"wildflower",category:"THE QUIET-WONDER SIDE",name:"The Wildflower.",description:"Give me warm sunlight, a field of wildflowers, butterflies, and moths. I notice small details and find beauty in places other people hurry past.",detail:"Moths, nature, sunlight, and beautiful little worlds."},
+    {mode:"creator",category:"THE MAKE-IT-REAL SIDE",name:"The Creator.",description:"My imagination doesn't always stop at the idea. I like turning possibilities into websites, interactive worlds, and unexpected experiments.",detail:"What could exist if I decided to build it?"},
+    {mode:"unfiltered",category:"THE EVERYDAY SIDE",name:"The Unfiltered.",description:"An independent person who loves sweet coffee, cats, a good laugh, and the space to be herself. I take what matters seriously, but don't need everything else to be serious.",detail:"Humor, honest conversation, and being completely myself."}
+  ];
+  const tiles=[...document.querySelectorAll(".character-tile")];
+  const stage=document.getElementById("character-stage");
+  tiles.forEach(function(tile){
+    tile.addEventListener("click",function(){
+      const index=Number(tile.dataset.index);
+      const selected=characters[index];
+      if(!selected) return;
+      stage.dataset.mode=selected.mode;
+      document.getElementById("character-counter").textContent=String(index+1).padStart(2,"0")+" / 04";
+      document.getElementById("character-category").textContent=selected.category;
+      document.getElementById("character-name").textContent=selected.name;
+      document.getElementById("character-description").textContent=selected.description;
+      document.getElementById("character-detail").textContent=selected.detail;
+      stage.querySelector(".stage-footer span").textContent=String(index+1).padStart(2,"0")+" / 04";
+      tiles.forEach(function(other){const active=other===tile;other.classList.toggle("active",active);other.setAttribute("aria-pressed",String(active));});
+    });
+  });
+
+  const form=document.getElementById("inquiry-form");
+  const send=document.getElementById("inquiry-submit");
+  const status=document.getElementById("inquiry-status");
+  const file=document.getElementById("inquiry-photo");
+  const preview=document.getElementById("photo-preview");
+  const photoPreview=document.getElementById("photo-preview-image");
+  const photoName=document.getElementById("photo-preview-name");
+  let photoUrl=null, turnstileId=null, ready=false;
+  function report(message,error){status.textContent=message;status.dataset.error=String(Boolean(error));}
+  function clearPhoto(){
+    if(photoUrl) URL.revokeObjectURL(photoUrl);
+    photoUrl=null;file.value="";photoPreview.removeAttribute("src");preview.hidden=true;photoName.textContent="";
+  }
+  file.addEventListener("change",function(){
+    const chosen=file.files && file.files[0];
+    if(photoUrl) URL.revokeObjectURL(photoUrl);
+    photoUrl=null;preview.hidden=true;
+    if(!chosen) return;
+    if(!["image/jpeg","image/png","image/webp"].includes(chosen.type)||chosen.size>3*1024*1024){
+      clearPhoto();report("Choose a JPG, PNG, or WebP photo under 3 MB.",true);return;
+    }
+    photoUrl=URL.createObjectURL(chosen);
+    photoPreview.src=photoUrl;
+    photoName.textContent=chosen.name;
+    preview.hidden=false;
+    if(ready)report("Your photo is attached. Complete the form to send your note.",false);
+  });
+  document.getElementById("clear-photo").addEventListener("click",clearPhoto);
+
+  function launchTurnstile(sitekey){
+    const script=document.createElement("script");
+    script.src="https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit";
+    script.async=true;
+    script.onload=function(){
+      if(!window.turnstile){report("The security check could not load. Refresh to try again.",true);return;}
+      turnstileId=window.turnstile.render("#fern-turnstile",{sitekey:sitekey,theme:"dark"});
+      ready=true;send.disabled=false;report("Ready for your private introduction.",false);
+    };
+    script.onerror=function(){report("The security check is unavailable. Refresh to try again.",true);};
+    document.head.appendChild(script);
+  }
+  fetch("/api/config",{headers:{"Accept":"application/json"},cache:"no-store"})
+    .then(function(response){if(!response.ok)throw Error("unavailable");return response.json();})
+    .then(function(config){
+      if(config.ready && config.turnstileSiteKey){launchTurnstile(config.turnstileSiteKey);}
+      else{report("The private inquiry form is being connected. Submissions aren't available yet.",false);}
+    })
+    .catch(function(){report("The inquiry service couldn't be reached. Please check back later.",true);});
+
+  form.addEventListener("submit",async function(event){
+    event.preventDefault();
+    if(!ready||send.disabled)return;
+    if(!form.reportValidity())return;
+    const selected=file.files && file.files[0];
+    if(!selected||selected.size>3*1024*1024){report("Please attach a photo under 3 MB.",true);return;}
+    send.disabled=true;report("Sending your introduction privately…",false);
+    try{
+      const response=await fetch("/api/inquiry",{method:"POST",body:new FormData(form),headers:{"Accept":"application/json"}});
+      const result=await response.json();
+      if(!response.ok||!result.ok)throw Error(result.error||"Unable to send the form.");
+      report("Your introduction has been sent privately. Thank you!",false);
+      form.reset();clearPhoto();
+    }catch(error){report(error.message||"Delivery failed. Please try again.",true);}
+    finally{
+      if(window.turnstile && turnstileId!==null)window.turnstile.reset(turnstileId);
+      send.disabled=!ready;
+    }
+  });
+})();
 </script>
 </body>
 </html>
