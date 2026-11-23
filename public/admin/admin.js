@@ -16,7 +16,7 @@ const stamp=ms=>new Date(ms).toLocaleString(undefined,{month:"short",day:"numeri
 function toast(s){const b=el("app-status");b.textContent=s;b.classList.add("show");clearTimeout(toast.timer);toast.timer=setTimeout(()=>b.classList.remove("show"),5000)}
 function setOnline(online){const b=el("online-button");b.dataset.online=String(online);b.setAttribute("aria-pressed",String(enabled));el("online-label").textContent=online?"Online":enabled?"Reconnecting…":"Offline"}
 async function session(){
- try{const me=await api("admin/me");signedIn=true;enabled=me.enabled;setOnline(me.online);login.hidden=true;app.hidden=false;actions.hidden=false;await refresh()}
+ try{const me=await api("admin/me");signedIn=true;enabled=me.enabled;setOnline(me.online);login.hidden=true;app.hidden=false;actions.hidden=false;void enableAdminNotices(false);await refresh()}
  catch{signedIn=false;login.hidden=false;app.hidden=true;actions.hidden=true}
 }
 el("login-form").addEventListener("submit",async e=>{e.preventDefault();el("login-status").textContent="";try{await api("admin/login","POST",{password:el("admin-password").value});el("admin-password").value="";await session()}catch(x){el("login-status").textContent=x.message}});
@@ -169,18 +169,20 @@ async function showThread(id,scroll){
   if(scroll&&innerWidth<600)detail.scrollIntoView({behavior:"smooth",block:"start"});
  }catch(x){toast(x.message)}
 }
-el("push-button").addEventListener("click",async()=>{
+async function enableAdminNotices(interactive){
+ if(!interactive&&(!("Notification" in window)||Notification.permission!=="granted"))return;
  try{
   if(!("Notification" in window)||!("serviceWorker" in navigator)||!("PushManager" in window))throw Error("Push notifications aren't supported here.");
   const data=await api("admin/push-key");
   if(!data.publicKey)throw Error("Push notifications aren't configured in Cloudflare yet.");
-  const permission=await Notification.requestPermission();
+  const permission=interactive?await Notification.requestPermission():Notification.permission;
   if(permission!=="granted")throw Error("Notification permission wasn't granted.");
   const registration=await navigator.serviceWorker.register("/admin/sw.js",{scope:"/admin/"});
   await navigator.serviceWorker.ready;
   const raw=atob(data.publicKey.replace(/-/g,"+").replace(/_/g,"/")+"=".repeat((4-data.publicKey.length%4)%4));
   const key=Uint8Array.from(raw,c=>c.charCodeAt(0));
   let subscription=await registration.pushManager.getSubscription();
+  if(!interactive&&!subscription)return;
   const subscribedKey=subscription?.options.applicationServerKey;
   if(subscription&&(!subscribedKey||subscribedKey.byteLength!==key.byteLength||
     !new Uint8Array(subscribedKey).every((value,index)=>value===key[index]))){
@@ -190,9 +192,10 @@ el("push-button").addEventListener("click",async()=>{
   if(!subscription)subscription=await registration.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:key.buffer});
   await api("admin/push-subscribe","POST",{subscription:subscription.toJSON()});
   el("push-button").textContent="Notifications on ✓";
-  toast("New inquiries and messages can now notify your phone.");
- }catch(x){toast(x.message)}
-});
+  if(interactive)toast("New inquiries and messages can now notify your phone.");
+ }catch(x){if(interactive)toast(x.message)}
+}
+el("push-button").addEventListener("click",()=>enableAdminNotices(true));
 addEventListener("beforeinstallprompt",e=>{e.preventDefault();installPrompt=e;el("install-prompt").hidden=false});
 el("install-prompt").addEventListener("click",async()=>{if(installPrompt){await installPrompt.prompt();installPrompt=null;el("install-prompt").hidden=true}});
 setInterval(async()=>{if(!signedIn||document.visibilityState!=="visible")return;if(enabled){try{const r=await api("admin/heartbeat","POST",{});setOnline(r.online)}catch{}}await refresh()},18000);

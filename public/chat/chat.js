@@ -71,13 +71,18 @@ profileForm.addEventListener("submit",async event=>{
 });
 window.addEventListener("beforeinstallprompt",e=>{e.preventDefault();installPrompt=e;E("install-chat").hidden=false});
 E("install-chat").addEventListener("click",async()=>{if(!installPrompt)return;await installPrompt.prompt();installPrompt=null;E("install-chat").hidden=true});
-E("enable-chat-notices").addEventListener("click",async()=>{
+let notificationPreference="";
+async function enableChatNotices(interactive){
+ if(!interactive&&(!notificationPreference||!("Notification" in window)||Notification.permission!=="granted"))return;
+ if(!interactive){
+  try{if(localStorage.getItem(notificationPreference)!=="on")return;}catch{return;}
+ }
  const button=E("enable-chat-notices");
  try{
   if(!("serviceWorker" in navigator)||!("PushManager" in window)||!("Notification" in window))throw Error("Reply alerts aren't supported by this browser.");
   const config=await api("visitor/push-key");
   if(!config.publicKey)throw Error("Reply alerts haven't been configured yet.");
-  const permission=await Notification.requestPermission();
+  const permission=interactive?await Notification.requestPermission():Notification.permission;
   if(permission!=="granted")throw Error("Notification permission wasn't granted.");
   const reg=await navigator.serviceWorker.register("/chat/sw.js",{scope:"/chat/"});
   await navigator.serviceWorker.ready;
@@ -92,9 +97,14 @@ E("enable-chat-notices").addEventListener("click",async()=>{
   }
   if(!subscription)subscription=await reg.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:key.buffer});
   await api("visitor/push-subscribe","POST",{subscription:subscription.toJSON()});
-  button.textContent="Reply alerts enabled ✓";status.textContent="Your phone can notify you when Fern replies.";
- }catch(error){status.textContent=error.message}
-});
+  if(interactive&&notificationPreference){
+   try{localStorage.setItem(notificationPreference,"on");}catch{}
+  }
+  button.textContent="Reply alerts enabled ✓";
+  if(interactive)status.textContent="Your phone can notify you when Fern replies.";
+ }catch(error){if(interactive)status.textContent=error.message}
+}
+E("enable-chat-notices").addEventListener("click",()=>enableChatNotices(true));
 
 const bubble=m=>{
  const el=document.createElement("div");el.className="bubble"+(m.sender==="visitor"?" mine":"");
@@ -118,7 +128,7 @@ async function messages(){
  }catch(e){status.textContent=e.message}
 }
 async function restore(){
- try{const me=await api("visitor/me");active=true;login.hidden=true;conversation.hidden=false;E("chat-title").textContent="Hello, "+me.name+".";presence(me.online);await Promise.all([messages(),loadProfile()]);
+ try{const me=await api("visitor/me");active=true;login.hidden=true;conversation.hidden=false;E("chat-title").textContent="Hello, "+me.name+".";presence(me.online);notificationPreference="fern-chat-alerts:"+me.id;void enableChatNotices(false);await Promise.all([messages(),loadProfile()]);
   try{
     if(sessionStorage.getItem("fern-chat-new-account")==="1"){
       sessionStorage.removeItem("fern-chat-new-account");displayInstallGuide();
@@ -131,7 +141,15 @@ E("visitor-login-form").onsubmit=async event=>{
  try{await api("login","POST",{email:E("visitor-email").value.trim(),password:E("visitor-password").value});E("visitor-password").value="";last=0;log.replaceChildren();await restore()}
  catch(e){E("login-status").textContent=e.message}
 };
-E("visitor-logout").onclick=async()=>{try{await api("logout","POST",{})}catch{}location.reload()};
+E("visitor-logout").onclick=async()=>{
+ let endpoint=null;
+ try{
+  const registration=await navigator.serviceWorker?.getRegistration("/chat/");
+  endpoint=(await registration?.pushManager.getSubscription())?.endpoint||null;
+ }catch{}
+ try{await api("logout","POST",{endpoint})}catch{}
+ location.reload();
+};
 E("chat-compose").onsubmit=async event=>{
  event.preventDefault();const input=E("message-input"),message=input.value.trim();if(!message)return;
  const button=E("chat-compose").querySelector("button");button.disabled=true;

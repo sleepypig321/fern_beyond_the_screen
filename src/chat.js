@@ -307,13 +307,18 @@ export class ChatHub extends DurableObject {
    }
    if(method==="POST"&&path==="/api/chat/logout"){
      const user=await this.session(request,"visitor");
-     if(user)this.db.exec("DELETE FROM visitor_push_subscriptions WHERE user_id=?",user.id);
+     const body=await readJson(request).catch(()=>null);
+     if(user&&typeof body?.endpoint==="string"){
+       this.db.exec("DELETE FROM visitor_push_subscriptions WHERE user_id=? AND endpoint=?",user.id,body.endpoint);
+     } else if(user&&(!body||!("endpoint" in body))){
+       this.db.exec("DELETE FROM visitor_push_subscriptions WHERE user_id=?",user.id);
+     }
      return this.logout(request,"visitor");
    }
    if(path.startsWith("/api/chat/visitor/")){
      const user=await this.session(request,"visitor");
      if(!user)return err(401,"Register through an approved invitation or sign in.");
-     if(method==="GET"&&path==="/api/chat/visitor/me")return json({ok:true,name:user.name,online:this.online()});
+     if(method==="GET"&&path==="/api/chat/visitor/me")return json({ok:true,id:user.id,name:user.name,online:this.online()});
      if(method==="GET"&&path==="/api/chat/visitor/push-key")return json({ok:true,publicKey:this.env.VAPID_PUBLIC_KEY||null});
      if(method==="POST"&&path==="/api/chat/visitor/push-subscribe"){
        const d=await readJson(request),sub=d?.subscription;
