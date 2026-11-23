@@ -1,3 +1,5 @@
+import { ChatHub } from "./chat.js";
+export { ChatHub };
 const JSON_HEADERS = { "Content-Type": "application/json; charset=utf-8", "Cache-Control": "no-store", "X-Content-Type-Options": "nosniff" };
 const MAX_PHOTO_BYTES = 3 * 1024 * 1024;
 const MAX_BODY_BYTES = 4 * 1024 * 1024;
@@ -24,7 +26,21 @@ function toBase64(bytes) {
   return btoa(out);
 }
 function configured(env) {
-  return Boolean(env.RESEND_API_KEY && env.INQUIRY_FROM_EMAIL && env.INQUIRY_TO_EMAIL && env.TURNSTILE_SITE_KEY && env.TURNSTILE_SECRET_KEY);
+  return Boolean(env.CHAT_HUB && env.TURNSTILE_SITE_KEY && env.TURNSTILE_SECRET_KEY);
+}
+function hub(env){return env.CHAT_HUB.getByName("fern-private-chat-v1");}
+function withNoCache(response){
+  const headers=new Headers(response.headers);headers.set("Cache-Control","no-store");
+  return new Response(response.body,{status:response.status,statusText:response.statusText,headers});
+}
+async function sendEmail(env,recipient,subject,body,attachments=[]){
+  if(!env.RESEND_API_KEY||!env.INQUIRY_FROM_EMAIL)return false;
+  const res=await fetch("https://api.resend.com/emails",{
+    method:"POST",headers:{Authorization:"Bearer "+env.RESEND_API_KEY,"Content-Type":"application/json"},
+    body:JSON.stringify({from:env.INQUIRY_FROM_EMAIL,to:[recipient],subject,text:body,attachments}),
+    signal:AbortSignal.timeout(12000)
+  });
+  return res.ok;
 }
 async function verifyTurnstile(token, secret, ip) {
   const data = new FormData();
@@ -36,7 +52,7 @@ async function verifyTurnstile(token, secret, ip) {
   const answer = await result.json();
   return answer.success === true;
 }
-async function inquiry(request, env) {
+async function inquiry(request, env, ctx) {
   if (!configured(env)) return json({ ok:false, error:"Inquiries aren't available yet. Please try again later." }, 503);
   if (!request.headers.get("Content-Type")?.toLowerCase().includes("multipart/form-data"))
     return json({ ok:false, error:"Please use the inquiry form." }, 415);
@@ -79,55 +95,66 @@ async function inquiry(request, env) {
   try { verified = await verifyTurnstile(turnstileToken, env.TURNSTILE_SECRET_KEY,request.headers.get("CF-Connecting-IP")); }
   catch { return json({ok:false,error:"The security check couldn't finish. Please retry."},503); }
   if (!verified) return json({ok:false,error:"The security check expired. Please complete it again."},400);
-  const text = [
-    "New inquiry — Fern, Beyond the Screen", "",
-    "First name: " + name,
-    "Age: " + age,
-    "City/region: " + city,
-    "Reply email: " + email,
-    "Interests: " + interests,
-    "What we might connect over: " + connection,
-    "",
-    "Their introduction:",
-    message,
-    "",
-    "The sender confirmed they are 25+ and consented to emailing this information and their photo.",
-    "The photo is attached to this email. It is not publicly posted by the website."
-  ].join("\n");
-  let sent;
-  try {
-    sent = await fetch("https://api.resend.com/emails", {
-      method: "POST",
-      headers: { Authorization: "Bearer " + env.RESEND_API_KEY, "Content-Type":"application/json" },
-      body: JSON.stringify({
-        from: env.INQUIRY_FROM_EMAIL,
-        to: [env.INQUIRY_TO_EMAIL],
-        reply_to: email,
-        subject: "New private introduction — Fern, Beyond the Screen",
-        text,
-        attachments: [{filename:"introduction-photo." + type.ext, content:toBase64(bytes), content_type:type.mime}]
-      }),
-      signal: AbortSignal.timeout(12000)
-    });
-  } catch {
-    return json({ok:false,error:"Email delivery is temporarily unavailable. Please try again."},502);
+
+  const id=crypto.randomUUID(), saved=await hub(env).fetch(new Request("https://chat-internal/api/chat/system/inquiry",{
+    method:"POST",headers:{"Content-Type":"application/json","CF-Connecting-IP":request.headers.get("CF-Connecting-IP")||"unknown"},
+    body:JSON.stringify({id,name,email:email.toLowerCase(),age,city,interests,connection,message,photo_type:type.mime,photo64:toBase64(bytes)})
+  }));
+  if(!saved.ok){
+    const detail=await saved.json().catch(()=>({}));
+    return json({ok:false,error:detail.error||"Your introduction could not be saved. Please retry."},saved.status);
   }
-  if (!sent.ok) {
-    console.log("Inquiry email delivery failure:",sent.status);
-    return json({ok:false,error:"Your message could not be delivered. Please try again later."},502);
+  // The admin inbox is authoritative. Optional email notifications are supplementary.
+  if(env.RESEND_API_KEY && env.INQUIRY_FROM_EMAIL && env.INQUIRY_TO_EMAIL){
+    const text=["New inquiry — Fern, Beyond the Screen","",
+      "First name: "+name,"Age: "+age,"City/region: "+city,"Reply email: "+email,
+      "Interests: "+interests,"What we might connect over: "+connection,
+      "","Their introduction:",message,"",
+      "The sender confirmed they are 25+ and consented to privately sharing their information and photograph.",
+      "Review and approve this application through the private administrator dashboard."].join("\n");
+    ctx.waitUntil(sendEmail(env,env.INQUIRY_TO_EMAIL,"New private introduction — Fern, Beyond the Screen",text,
+      [{filename:"introduction-photo."+type.ext,content:toBase64(bytes),content_type:type.mime}])
+      .catch(error=>console.error("Optional inquiry notification unavailable",String(error))));
   }
-  return json({ok:true,message:"Your introduction has been sent privately. Thank you!"});
+  return json({ok:true,message:"Your introduction has been received for private review. If approved, you'll receive a registration invitation."});
+
 }
 export default {
-  async fetch(request, env) {
-    const url = new URL(request.url);
-    if (url.pathname === "/api/config" && request.method === "GET") {
-      return json({ready:configured(env),turnstileSiteKey:configured(env) ? env.TURNSTILE_SITE_KEY : null});
+  async fetch(request, env, ctx) {
+    const url=new URL(request.url);
+    // No public access to internal admission endpoints, even if guessed.
+    if(url.pathname.startsWith("/api/chat/system/"))return json({ok:false,error:"Not found"},404);
+    if(url.pathname.startsWith("/api/chat/")){
+      if(!env.CHAT_HUB)return json({ok:false,error:"Private chat is not configured yet."},503);
+      if(["POST","PUT","PATCH","DELETE"].includes(request.method)){
+        const origin=request.headers.get("Origin");
+        if(!origin||origin!==url.origin)return json({ok:false,error:"Requests must come from this website."},403);
+        if(Number(request.headers.get("Content-Length")||0)>20000)
+          return json({ok:false,error:"Request too large."},413);
+      }
+      const response=await hub(env).fetch(request);
+      if(url.pathname.match(/^\/api\/chat\/admin\/inquiries\/[a-f0-9-]{36}\/approve$/)&&request.method==="POST"&&response.ok){
+        const details=await response.json();
+        const invite=url.origin+"/chat/register/?token="+encodeURIComponent(details.token);
+        let emailed=false;
+        if(env.RESEND_API_KEY&&env.INQUIRY_FROM_EMAIL){
+          try {emailed=await sendEmail(env,details.email,
+            "Your private invitation — Fern, Beyond the Screen",
+            "Hello "+details.name+",\n\nYour introduction has been approved. You can create a private chat account using the invitation below:\n\n"+invite+
+            "\n\nThis invitation can be used only once and expires in seven days. Please do not forward it.\n\nFern, Beyond the Screen");}
+          catch(e){console.log("Invitation email not delivered",String(e));}
+        }
+        return json({ok:true,inviteUrl:invite,emailed,expires:details.expires});
+      }
+      return withNoCache(response);
     }
-    if (url.pathname === "/api/inquiry" && request.method === "POST") {
-      return inquiry(request,env);
+    if(url.pathname==="/api/config" && request.method==="GET"){
+      return json({ready:configured(env),turnstileSiteKey:configured(env)?env.TURNSTILE_SITE_KEY:null});
     }
-    if (url.pathname.startsWith("/api/")) return json({ok:false,error:"Not found"},404);
+    if(url.pathname==="/api/inquiry" && request.method==="POST"){
+      return inquiry(request,env,ctx);
+    }
+    if(url.pathname.startsWith("/api/"))return json({ok:false,error:"Not found"},404);
     return env.ASSETS.fetch(request);
   }
 };
