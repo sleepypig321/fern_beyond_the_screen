@@ -181,6 +181,12 @@ el("push-button").addEventListener("click",async()=>{
   const raw=atob(data.publicKey.replace(/-/g,"+").replace(/_/g,"/")+"=".repeat((4-data.publicKey.length%4)%4));
   const key=Uint8Array.from(raw,c=>c.charCodeAt(0));
   let subscription=await registration.pushManager.getSubscription();
+  const subscribedKey=subscription?.options.applicationServerKey;
+  if(subscription&&(!subscribedKey||subscribedKey.byteLength!==key.byteLength||
+    !new Uint8Array(subscribedKey).every((value,index)=>value===key[index]))){
+    await subscription.unsubscribe();
+    subscription=null;
+  }
   if(!subscription)subscription=await registration.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:key.buffer});
   await api("admin/push-subscribe","POST",{subscription:subscription.toJSON()});
   el("push-button").textContent="Notifications on ✓";

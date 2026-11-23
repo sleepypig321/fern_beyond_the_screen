@@ -23,6 +23,14 @@ function validPush(s) {
   }catch{return false}
 }
 const passwordHashPrefix = "pbkdf2-sha256:100000:";
+async function deliverPush(subscription, payload, ttl) {
+ const request=webpush.generateRequestDetails(subscription,JSON.stringify(payload),{TTL:ttl});
+ const headers=new Headers(request.headers);
+ headers.delete("Content-Length");
+ return fetch(request.endpoint,{
+  method:request.method,headers,body:request.body,redirect:"error",signal:AbortSignal.timeout(8000)
+ });
+}
 async function passwordHash(password, salt, storedHash = passwordHashPrefix) {
  if (!storedHash.startsWith(passwordHashPrefix)) {
   // Preserve verification for any unprefixed hashes created by earlier versions.
@@ -115,8 +123,11 @@ export class ChatHub extends DurableObject {
   catch(e){console.log("Push configuration invalid",String(e));return}
   const subs=this.rows("SELECT endpoint,subscription FROM push_subscriptions");
   await Promise.allSettled(subs.map(async row=>{
-    try{await webpush.sendNotification(JSON.parse(row.subscription),JSON.stringify(payload),{TTL:240})}
-    catch(e){if([404,410].includes(e.statusCode))this.db.exec("DELETE FROM push_subscriptions WHERE endpoint=?",row.endpoint)}
+    try {
+      const response=await deliverPush(JSON.parse(row.subscription),payload,240);
+      if([404,410].includes(response.status))this.db.exec("DELETE FROM push_subscriptions WHERE endpoint=?",row.endpoint);
+      else if(!response.ok)console.error("Admin push rejected",response.status);
+    } catch(error){console.error("Admin push failed",error.name,error.code);}
   }));
  }
  async announceVisitor(userId){
@@ -126,8 +137,11 @@ export class ChatHub extends DurableObject {
   const subs=this.rows("SELECT endpoint,subscription FROM visitor_push_subscriptions WHERE user_id=?",userId);
   // Intentionally generic notification text; never expose private messages in a lock-screen alert.
   await Promise.allSettled(subs.map(async row=>{
-    try{await webpush.sendNotification(JSON.parse(row.subscription),JSON.stringify({title:"Fern · Private Chat",body:"You have a new private reply.",url:"/chat/",tag:"fern-private-reply"}),{TTL:360})}
-    catch(error){if([404,410].includes(error.statusCode))this.db.exec("DELETE FROM visitor_push_subscriptions WHERE endpoint=?",row.endpoint)}
+    try {
+      const response=await deliverPush(JSON.parse(row.subscription),{title:"Fern · Private Chat",body:"You have a new private reply.",url:"/chat/",tag:"fern-private-reply"},360);
+      if([404,410].includes(response.status))this.db.exec("DELETE FROM visitor_push_subscriptions WHERE endpoint=?",row.endpoint);
+      else if(!response.ok)console.error("Visitor push rejected",response.status);
+    } catch(error){console.error("Visitor push failed",error.name,error.code);}
   }));
  }
  async fetch(request){
@@ -135,7 +149,7 @@ export class ChatHub extends DurableObject {
   try{
    // Public: the only side channel is whether Fern is currently available.
    if(method==="GET"&&path==="/api/chat/presence")return json({ok:true,online:this.online()});
-   if(method==="GET"&&path==="/api/chat/config")return json({ok:true,registration:"approval-only",pushReady:Boolean(this.env.VAPID_PUBLIC_KEY&&this.env.VAPID_PRIVATE_KEY)});
+   if(method==="GET"&&path==="/api/chat/config")return json({ok:true,registration:"approval-only",pushReady:Boolean(this.env.VAPID_PUBLIC_KEY&&this.env.VAPID_PRIVATE_KEY&&this.env.VAPID_SUBJECT)});
    if(method==="POST"&&path==="/api/chat/system/inquiry"){
     const d=await readJson(request);
     if(!d||!validId(d.id)||!d.name||!d.email||!d.message||d.age<25||d.age>110||!["image/png","image/jpeg","image/webp"].includes(d.photo_type)||typeof d.photo64!=="string"||d.photo64.length>4200000)return err(400,"Invalid introduction.");

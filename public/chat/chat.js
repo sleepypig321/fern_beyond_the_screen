@@ -84,6 +84,12 @@ E("enable-chat-notices").addEventListener("click",async()=>{
   const str=config.publicKey.replace(/-/g,"+").replace(/_/g,"/");
   const key=Uint8Array.from(atob(str+"=".repeat((4-str.length%4)%4)),c=>c.charCodeAt(0));
   let subscription=await reg.pushManager.getSubscription();
+  const subscribedKey=subscription?.options.applicationServerKey;
+  if(subscription&&(!subscribedKey||subscribedKey.byteLength!==key.byteLength||
+    !new Uint8Array(subscribedKey).every((value,index)=>value===key[index]))){
+    await subscription.unsubscribe();
+    subscription=null;
+  }
   if(!subscription)subscription=await reg.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:key.buffer});
   await api("visitor/push-subscribe","POST",{subscription:subscription.toJSON()});
   button.textContent="Reply alerts enabled ✓";status.textContent="Your phone can notify you when Fern replies.";
