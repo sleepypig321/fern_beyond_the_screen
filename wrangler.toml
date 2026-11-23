@@ -8,10 +8,10 @@ directory = "./public"
 binding = "ASSETS"
 run_worker_first = ["/api/*"]
 
-# Reuse the Sites by Fern dynamic EmailJS decision template.
+# Use the branded Beyond the Screen EmailJS template.
 # Keep account and service credentials in the Cloudflare Worker secrets.
 [vars]
-EMAILJS_DECISION_TEMPLATE_ID = "template_kik3zps"
+EMAILJS_DECISION_TEMPLATE_ID = "template_00j1yn9"
 
 # Approval-only private chat: a SQLite-backed Durable Object.
 [[durable_objects.bindings]]
