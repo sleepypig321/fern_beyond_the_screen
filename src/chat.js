@@ -13,7 +13,6 @@ const cookie=(k,value,age)=>k+"="+value+"; Path=/; HttpOnly; Secure; SameSite=St
 const clearCookie=name=>cookie(name,"",0);
 const cookieValue=(request,name)=>request.headers.get("cookie")?.match(new RegExp("(?:^|; )"+name+"=([^;]+)"))?.[1]||"";
 const sqlRows=(db,s,...params)=>db.exec(s,...params).toArray();
-const limitKey=(request)=>request.headers.get("CF-Connecting-IP")||"anonymous";
 function validPush(s) {
   if(!s||typeof s.endpoint!=="string"||s.endpoint.length>1200||!s.keys||typeof s.keys.auth!=="string"||typeof s.keys.p256dh!=="string")return false;
   try{
@@ -43,8 +42,9 @@ export class ChatHub extends DurableObject {
   this.db.exec("CREATE TABLE IF NOT EXISTS rate_limits(key TEXT PRIMARY KEY,count INTEGER NOT NULL,since INTEGER NOT NULL)");
  }
  rows(query,...args){return sqlRows(this.db,query,...args)}
- rate(request,purpose,max,ms){
-  const key=purpose+":"+limitKey(request),when=t(),r=this.rows("SELECT count,since FROM rate_limits WHERE key=?",key)[0];
+ async rate(request,purpose,max,ms){
+  const visitorIp=request.headers.get("CF-Connecting-IP")||"anonymous";
+  const key=purpose+":"+(await hex((this.env.ADMIN_PASSWORD||"private") + ":" + visitorIp)),when=t(),r=this.rows("SELECT count,since FROM rate_limits WHERE key=?",key)[0];
   if(!r||when-r.since>ms){this.db.exec("INSERT OR REPLACE INTO rate_limits(key,count,since) VALUES(?,1,?)",key,when);return false}
   if(r.count>=max)return true;
   this.db.exec("UPDATE rate_limits SET count=count+1 WHERE key=?",key);return false;
@@ -94,7 +94,7 @@ export class ChatHub extends DurableObject {
    if(method==="POST"&&path==="/api/chat/system/inquiry"){
     const d=await readJson(request);
     if(!d||!validId(d.id)||!d.name||!d.email||!d.message||d.age<25||d.age>110||!["image/png","image/jpeg","image/webp"].includes(d.photo_type)||typeof d.photo64!=="string"||d.photo64.length>4200000)return err(400,"Invalid introduction.");
-    if(this.rate(request,"new-inquiry",6,3600000))return err(429,"Please try again later.");
+    if(await this.rate(request,"new-inquiry",6,3600000))return err(429,"Please try again later.");
     this.db.exec("INSERT INTO inquiries(id,name,email,age,city,interests,connection,message,photo_type,status,created_at,updated_at) VALUES(?,?,?,?,?,?,?,?,?,'pending',?,?)",d.id,d.name,d.email,d.age,d.city,d.interests,d.connection,d.message,d.photo_type,t(),t());
     // Split large photographs into storage-safe values; the 3 MB attachment remains private.
     const pieces=Math.ceil(d.photo64.length/96000);
@@ -106,7 +106,7 @@ export class ChatHub extends DurableObject {
    // Single administrator: login requires a Cloudflare secret, not a public signup form.
    if(method==="POST"&&path==="/api/chat/admin/login"){
      if(!this.env.ADMIN_PASSWORD)return err(503,"Admin login hasn't been configured.");
-     if(this.rate(request,"admin-login",8,15*60000))return err(429,"Too many attempts. Try again later.");
+     if(await this.rate(request,"admin-login",8,15*60000))return err(429,"Too many attempts. Try again later.");
      const d=await readJson(request);
      if(typeof d.password!=="string"||d.password.length>300||await hex(d.password)!==await hex(this.env.ADMIN_PASSWORD))return err(401,"Incorrect password.");
      return json({ok:true},200,{"Set-Cookie":await this.newSession("admin")});
@@ -192,7 +192,7 @@ export class ChatHub extends DurableObject {
      return json({ok:true,name:row.name});
    }
    if(method==="POST"&&path==="/api/chat/register"){
-     if(this.rate(request,"chat-register",12,3600000))return err(429,"Please try later.");
+     if(await this.rate(request,"chat-register",12,3600000))return err(429,"Please try later.");
      const d=await readJson(request),pass=d.password,inv=d.token;
      if(typeof pass!=="string"||pass.length<12||pass.length>128||typeof inv!=="string"||inv.length<32||inv.length>150)return err(400,"A valid invitation and a password of 12–128 characters are required.");
      const row=this.rows("SELECT id,name,email,invite_expires,invite_used FROM inquiries WHERE invite_hash=? AND status='approved'",await hex(inv))[0];
@@ -204,7 +204,7 @@ export class ChatHub extends DurableObject {
      return json({ok:true,name:row.name},200,{"Set-Cookie":await this.newSession("visitor",row.id)});
    }
    if(method==="POST"&&path==="/api/chat/login"){
-     if(this.rate(request,"chat-login",12,15*60000))return err(429,"Too many attempts. Try later.");
+     if(await this.rate(request,"chat-login",12,15*60000))return err(429,"Too many attempts. Try later.");
      const d=await readJson(request),email=trimmed(d.email,254).toLowerCase(),pass=d.password;
      if(!email||typeof pass!=="string"||pass.length>300)return err(401,"Email or password incorrect.");
      const user=this.rows("SELECT * FROM chat_users WHERE email=? AND status='active'",email)[0];
@@ -221,7 +221,7 @@ export class ChatHub extends DurableObject {
        return json({ok:true,online:this.online(),messages:this.rows("SELECT id,sender,body,created_at FROM messages WHERE thread_id=? AND id>? ORDER BY id ASC LIMIT 150",user.id,after)});
      }
      if(method==="POST"&&path==="/api/chat/visitor/messages"){
-       if(this.rate(request,"chat-message:"+user.id,12,60000))return err(429,"Too many messages. Please wait a moment.");
+       if(await this.rate(request,"chat-message:"+user.id,12,60000))return err(429,"Too many messages. Please wait a moment.");
        const d=await readJson(request),body=trimmed(d.message,1001);
        if(body.length<1||body.length>1000)return err(400,"Messages must be 1–1000 characters.");
        this.db.exec("INSERT INTO messages(thread_id,sender,body,created_at) VALUES(?,'visitor',?,?)",user.id,body,t());
