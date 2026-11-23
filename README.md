@@ -76,6 +76,17 @@ The `CHAT_HUB` Durable Object binding and `ChatHub` SQLite class migration are d
 
 **Never put email addresses, passwords, API tokens, addresses, private photographs or home IP addresses in public HTML or source files.** Site-wide response headers block framing, request geolocation permission, and suppress referrer leakage. No web configuration can hide a device IP from its own ISP, the network it connects to, or all external services.
 
+
+### Automatic inquiry and invitation emails
+
+New private introductions trigger a styled notification email to the recipient configured in the Cloudflare Worker secret `INQUIRY_TO_EMAIL`. The email has a **Review this inquiry** link into the password-protected administrator inbox; it never allows approval directly from email. The photograph and full answers are accessed only after signing in.
+
+**Approve** sends a tailored, one-time registration invitation automatically to the applicant's email when Resend is configured. **Decline** sends a considerate personal response. The admin dashboard reports whether Resend accepted either email; without configured delivery, the approval link is still available for manual private sharing, and declines still revoke access without claiming a message was sent.
+
+To route inquiry notifications to the owner's preferred inbox, set `INQUIRY_TO_EMAIL` under the Cloudflare Worker settings to the correct recipient address. Keep that address private: do not put it in `wrangler.toml`, `README.md`, or client-side HTML. Set `RESEND_API_KEY` and `INQUIRY_FROM_EMAIL` with a verified sending domain before relying on automatic delivery. A notification on new inquiry is an additional convenience; the encrypted-transport admin login remains authoritative.
+
+After registration, approved visitors are presented with the optional **Install private chat** guide. The visitor PWA and administrator PWA use different URL scopes and separate notifications.
+
 ## Cloudflare deploy
 
 - Repository: `sleepypig321/fern_beyond_the_screen`, branch: `main`

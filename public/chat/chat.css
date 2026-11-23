@@ -43,3 +43,11 @@ textarea{resize:vertical}input:focus-visible,textarea:focus-visible,button:focus
 #profile-status{font-size:12px;color:#e9b6a7}
 .install-chat{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin:20px 0 10px;color:#d0b9ad;font-size:12px}.install-chat .subtle{font-size:11px}
 @media(max-width:620px){.profile-form .profile-two{grid-template-columns:1fr}.profile-inside{padding:16px}}
+
+/* Optional, friendly install invitation immediately after approved registration. */
+.install-guide{margin:22px 0 26px;border:1px solid rgba(216,175,146,.7);padding:24px clamp(18px,4vw,32px);background:linear-gradient(130deg,#451a2c,#1c0c16)}
+.install-guide h2{font:400 clamp(31px,4vw,45px)/1.09 Grenze,Georgia,serif;margin:12px 0;color:#f5dfd0}
+.install-guide p{color:#e2c6bd;font-size:13px;line-height:1.8;max-width:680px}
+.install-guide strong{font-weight:700;color:#f4dfce}
+.install-guide-actions{display:flex;gap:11px;flex-wrap:wrap;margin:22px 0 0}
+@media(max-width:600px){.install-guide-actions>*{width:100%}}

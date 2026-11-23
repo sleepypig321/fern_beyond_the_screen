@@ -20,7 +20,7 @@ if(register){
   const password=E("new-password").value;
   if(password!==E("repeat-password").value){status.textContent="The passwords don't match.";return}
   const button=register.querySelector("button");button.disabled=true;
-  try{await api("register","POST",{token,password});history.replaceState(null,"","/chat/register/");location.replace("/chat/")}
+  try{await api("register","POST",{token,password});try{sessionStorage.setItem("fern-chat-new-account","1")}catch{}history.replaceState(null,"","/chat/register/");location.replace("/chat/")}
   catch(e){status.textContent=e.message;button.disabled=false}
  };
  check();
@@ -30,6 +30,23 @@ const login=E("visitor-login"),conversation=E("private-conversation"),log=E("cha
 if(!login||!conversation)return;
 let active=false,last=0;
 let installPrompt=null;
+const installGuide=E("install-guide"),installHelp=E("install-help");
+function displayInstallGuide(){
+ if(!active||!installGuide)return;
+ installGuide.hidden=false;
+}
+E("install-now").addEventListener("click",async()=>{
+ if(installPrompt){
+  await installPrompt.prompt();
+  installPrompt=null;
+  E("install-chat").hidden=true;
+  installHelp.textContent="Follow the browser's installation prompt. You can also keep chatting here.";
+ }else{
+  installHelp.textContent="Use Safari's Share → Add to Home Screen on iPhone, or your browser's Install/Add to Home Screen menu on Android.";
+ }
+});
+E("install-dismiss").addEventListener("click",()=>{installGuide.hidden=true});
+
 const profileForm=E("profile-form"),profileStatus=E("profile-status");
 let profileDirty=false;
 async function loadProfile(){
@@ -95,7 +112,12 @@ async function messages(){
  }catch(e){status.textContent=e.message}
 }
 async function restore(){
- try{const me=await api("visitor/me");active=true;login.hidden=true;conversation.hidden=false;E("chat-title").textContent="Hello, "+me.name+".";presence(me.online);await Promise.all([messages(),loadProfile()])}
+ try{const me=await api("visitor/me");active=true;login.hidden=true;conversation.hidden=false;E("chat-title").textContent="Hello, "+me.name+".";presence(me.online);await Promise.all([messages(),loadProfile()]);
+  try{
+    if(sessionStorage.getItem("fern-chat-new-account")==="1"){
+      sessionStorage.removeItem("fern-chat-new-account");displayInstallGuide();
+    }
+  }catch{}}
  catch{active=false;login.hidden=false;conversation.hidden=true;try{const p=await api("presence");presence(p.online)}catch{}}
 }
 E("visitor-login-form").onsubmit=async event=>{
