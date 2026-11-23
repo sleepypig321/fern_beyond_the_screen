@@ -51,7 +51,7 @@ A client-side script (`public/portraits.js`) automatically replaces a chapter pl
 
 ## Private inquiry email + photo attachments
 
-`src/index.js` handles POST `/api/inquiry` with server-side validation, 18+ restriction, Cloudflare Turnstile spam prevention, and image-type verification (JPG/PNG/WebP, up to 3 MB). It sends the message and photo as an email attachment using Resend. It does **not** create public image URLs or write inquiries to a public database. Sender name, email, interests, regional location, introduction, and photo are sent to the private recipient address and subject to the email service's retention practices.
+`src/index.js` handles POST `/api/inquiry` with server-side validation, 25+ restriction, Cloudflare Turnstile spam prevention, and image-type verification (JPG/PNG/WebP, up to 3 MB). It sends the message and photo as an email attachment using Resend. It does **not** create public image URLs or write inquiries to a public database. Sender name, email, interests, regional location, introduction, and photo are sent to the private recipient address and subject to the email service's retention practices.
 
 Before this can accept submissions, set the following environment variables and secrets on your Cloudflare Worker **fern-beyond-the-screen**:
 
