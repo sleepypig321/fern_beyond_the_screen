@@ -91,6 +91,7 @@ export class ChatHub extends DurableObject {
   this.db.exec("CREATE TABLE IF NOT EXISTS push_subscriptions(endpoint TEXT PRIMARY KEY,subscription TEXT NOT NULL,created_at INTEGER NOT NULL)");
   this.db.exec("CREATE TABLE IF NOT EXISTS chat_settings(key TEXT PRIMARY KEY,value TEXT NOT NULL)");
   this.db.exec("CREATE TABLE IF NOT EXISTS rate_limits(key TEXT PRIMARY KEY,count INTEGER NOT NULL,since INTEGER NOT NULL)");
+  this.db.exec("CREATE TABLE IF NOT EXISTS confirmed_chat_profiles(user_id TEXT PRIMARY KEY)");
   // Additive tables retain existing inquiries, messages and established sessions.
   this.db.exec("CREATE TABLE IF NOT EXISTS chat_profiles(user_id TEXT PRIMARY KEY,preferred_name TEXT NOT NULL DEFAULT '',region TEXT NOT NULL DEFAULT '',occupation TEXT NOT NULL DEFAULT '',about TEXT NOT NULL DEFAULT '',interests TEXT NOT NULL DEFAULT '',talking_points TEXT NOT NULL DEFAULT '',intentions TEXT NOT NULL DEFAULT '',updated_at INTEGER NOT NULL)");
   this.db.exec("CREATE TABLE IF NOT EXISTS admin_profile_notes(user_id TEXT PRIMARY KEY,note TEXT NOT NULL DEFAULT '',updated_at INTEGER NOT NULL)");
@@ -98,6 +99,9 @@ export class ChatHub extends DurableObject {
   this.db.exec("CREATE INDEX IF NOT EXISTS visitor_push_by_user ON visitor_push_subscriptions(user_id)");
  }
  rows(query,...args){return sqlRows(this.db,query,...args)}
+ profileComplete(id){
+  return this.rows("SELECT user_id FROM confirmed_chat_profiles WHERE user_id=?",id).length>0;
+ }
  profile(id){
    const row=this.rows("SELECT u.id,u.name AS account_name,u.email,i.age,i.city,i.interests AS original_interests,i.connection AS original_connection,i.message AS original_message,i.created_at AS applied_at,p.preferred_name,p.region,p.occupation,p.about,p.interests,p.talking_points,p.intentions,p.updated_at AS profile_updated FROM chat_users u JOIN inquiries i ON i.id=u.id LEFT JOIN chat_profiles p ON p.user_id=u.id WHERE u.id=?",id)[0];
    if(!row)return null;
@@ -348,7 +352,7 @@ export class ChatHub extends DurableObject {
    if(path.startsWith("/api/chat/visitor/")){
      const user=await this.session(request,"visitor");
      if(!user)return err(401,"Register through an approved invitation or sign in.");
-     if(method==="GET"&&path==="/api/chat/visitor/me")return json({ok:true,id:user.id,name:user.name,online:this.online()});
+     if(method==="GET"&&path==="/api/chat/visitor/me")return json({ok:true,id:user.id,name:user.name,online:this.online(),profileComplete:this.profileComplete(user.id)});
      if(method==="GET"&&path==="/api/chat/visitor/push-key")return json({ok:true,publicKey:this.env.VAPID_PUBLIC_KEY||null});
      if(method==="POST"&&path==="/api/chat/visitor/push-subscribe"){
        const d=await readJson(request),sub=d?.subscription;
@@ -387,9 +391,15 @@ export class ChatHub extends DurableObject {
          values[name]=d[name].trim();
        }
        if(values.preferred_name.length<2)return err(400,"Please provide a name of at least two characters.");
+       this.ctx.storage.transactionSync(()=>{
        this.db.exec("INSERT INTO chat_profiles(user_id,preferred_name,region,occupation,about,interests,talking_points,intentions,updated_at) VALUES(?,?,?,?,?,?,?,?,?) ON CONFLICT(user_id) DO UPDATE SET preferred_name=excluded.preferred_name,region=excluded.region,occupation=excluded.occupation,about=excluded.about,interests=excluded.interests,talking_points=excluded.talking_points,intentions=excluded.intentions,updated_at=excluded.updated_at",
          user.id,values.preferred_name,values.region,values.occupation,values.about,values.interests,values.talking_points,values.intentions,t());
-       return json({ok:true,profile:this.profile(user.id)});
+       this.db.exec("INSERT OR IGNORE INTO confirmed_chat_profiles(user_id) VALUES(?)",user.id);
+       });
+       return json({ok:true,profile:this.profile(user.id),profileComplete:true});
+     }
+     if(path==="/api/chat/visitor/messages"&&!this.profileComplete(user.id)){
+       return err(403,"Save your private profile to unlock chat.");
      }
      if(method==="GET"&&path==="/api/chat/visitor/messages"){
        const after=Math.max(0,Math.min(999999999,Number(u.searchParams.get("after")||0)||0));

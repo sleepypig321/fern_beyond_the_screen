@@ -49,6 +49,26 @@ E("install-dismiss").addEventListener("click",()=>{installGuide.hidden=true});
 
 const profileForm=E("profile-form"),profileStatus=E("profile-status");
 let profileDirty=false;
+let chatUnlocked=false;
+function setChatUnlocked(unlocked){
+ chatUnlocked=unlocked;
+ E("profile-required").hidden=unlocked;
+ E("chat-messages").hidden=!unlocked;
+ E("chat-install-controls").hidden=!unlocked;
+ E("chat-availability").hidden=!unlocked;
+ if(!unlocked)E("profile-panel").open=true;
+}
+function startChat(){
+ setChatUnlocked(true);
+ void enableChatNotices(false);
+ void messages();
+ try{
+  if(sessionStorage.getItem("fern-chat-new-account")==="1"){
+   sessionStorage.removeItem("fern-chat-new-account");
+   displayInstallGuide();
+  }
+ }catch{}
+}
 async function loadProfile(){
  if(!active||profileDirty)return;
  try{
@@ -65,7 +85,12 @@ profileForm.addEventListener("submit",async event=>{
  const button=profileForm.querySelector("button[type=submit]");button.disabled=true;
  const fields=["preferred_name","region","occupation","about","interests","talking_points","intentions"];
  const payload=Object.fromEntries(fields.map(f=>[f,profileForm.elements[f].value.trim()]));
- try{await api("visitor/profile","POST",payload);profileDirty=false;profileStatus.textContent="Saved privately for you and Fern."}
+ try{
+  const result=await api("visitor/profile","POST",payload);
+  profileDirty=false;
+  profileStatus.textContent="Saved privately for you and Fern.";
+  if(result.profileComplete&&!chatUnlocked)startChat();
+ }
  catch(error){profileStatus.textContent=error.message}
  finally{button.disabled=false}
 });
@@ -119,7 +144,7 @@ function presence(v){
  }
 }
 async function messages(){
- if(!active)return;
+ if(!active||!chatUnlocked)return;
  try{
   const r=await api("visitor/messages?after="+last);
   presence(r.online);
@@ -128,12 +153,11 @@ async function messages(){
  }catch(e){status.textContent=e.message}
 }
 async function restore(){
- try{const me=await api("visitor/me");active=true;login.hidden=true;conversation.hidden=false;E("chat-title").textContent="Hello, "+me.name+".";presence(me.online);notificationPreference="fern-chat-alerts:"+me.id;void enableChatNotices(false);await Promise.all([messages(),loadProfile()]);
-  try{
-    if(sessionStorage.getItem("fern-chat-new-account")==="1"){
-      sessionStorage.removeItem("fern-chat-new-account");displayInstallGuide();
-    }
-  }catch{}}
+ try{const me=await api("visitor/me");active=true;login.hidden=true;conversation.hidden=false;E("chat-title").textContent="Hello, "+me.name+".";presence(me.online);notificationPreference="fern-chat-alerts:"+me.id;
+  setChatUnlocked(Boolean(me.profileComplete));
+  await loadProfile();
+  if(me.profileComplete)startChat();
+ }
  catch{active=false;login.hidden=false;conversation.hidden=true;try{const p=await api("presence");presence(p.online)}catch{}}
 }
 E("visitor-login-form").onsubmit=async event=>{
@@ -151,7 +175,7 @@ E("visitor-logout").onclick=async()=>{
  location.reload();
 };
 E("chat-compose").onsubmit=async event=>{
- event.preventDefault();const input=E("message-input"),message=input.value.trim();if(!message)return;
+ event.preventDefault();if(!chatUnlocked)return;const input=E("message-input"),message=input.value.trim();if(!message)return;
  const button=E("chat-compose").querySelector("button");button.disabled=true;
  try{await api("visitor/messages","POST",{message});input.value="";status.textContent="Message delivered.";await messages()}
  catch(e){status.textContent=e.message}

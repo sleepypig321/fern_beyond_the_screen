@@ -12,7 +12,7 @@
 <p id="login-status" role="status" class="status"></p><p class="foot">There's no public registration. You can only join after an approved inquiry and personal invitation.</p>
 <a href="/inquire/" class="text-link">Begin with a private introduction</a></section>
 <section id="private-conversation" class="conversation" hidden><div class="thread-heading"><div><span class="eyebrow">ONE-TO-ONE CORRESPONDENCE</span><h1 id="chat-title">Your private conversation</h1></div><button type="button" id="visitor-logout" class="subtle">Sign out</button></div>
-<div class="install-chat"><span>Keep our conversation close, right on your home screen.</span><button id="install-chat" type="button" class="subtle" hidden>Install private chat</button><button id="enable-chat-notices" type="button" class="subtle">Enable reply alerts</button></div>
+<div id="chat-install-controls" class="install-chat" hidden><span>Keep our conversation close, right on your home screen.</span><button id="install-chat" type="button" class="subtle" hidden>Install private chat</button><button id="enable-chat-notices" type="button" class="subtle">Enable reply alerts</button></div>
 <section id="install-guide" class="install-guide" hidden aria-labelledby="install-guide-title">
  <div><span class="eyebrow">YOUR PRIVATE CORRESPONDENCE</span><h2 id="install-guide-title">A little place for our messages.</h2>
  <p>You're approved! You may add this private chat to your phone's Home Screen. It's optional; you can continue using your browser whenever you prefer.</p>
@@ -20,7 +20,8 @@
  <div class="install-guide-actions"><button id="install-now" class="primary" type="button">Install when available</button><button id="install-dismiss" class="subtle" type="button">Continue in browser</button></div>
  <p id="install-help" class="status" role="status"></p></div>
 </section>
-<div class="chat-online-note"><span id="online-dot-inner" class="dot"></span><span id="online-text-inner">Checking Fern's availability…</span></div>
+<div id="chat-availability" class="chat-online-note" hidden><span id="online-dot-inner" class="dot"></span><span id="online-text-inner">Checking Fern's availability…</span></div>
+<p id="profile-required" class="status" hidden>Review your private profile and save it to unlock chat.</p>
 <details id="profile-panel" class="profile-panel">
 <summary><span>My private profile <small>Only you and Fern can see these details</small></span><span aria-hidden="true">＋</span></summary>
 <div class="profile-inside">
@@ -38,9 +39,10 @@
 <div class="profile-controls"><button type="submit" class="primary">Save my profile</button><span id="profile-status" role="status" aria-live="polite"></span></div>
 </form><p class="profile-privacy">Your verified inquiry age and registration email remain attached to your account. Other visitors cannot view your profile.</p>
 </div></details>
+<div id="chat-messages" hidden>
 <div id="chat-log" class="chat-log" role="log" aria-live="polite" aria-label="Private messages"></div>
 <form id="chat-compose" class="compose"><label for="message-input">Your message</label>
 <textarea id="message-input" maxlength="1000" rows="3" required placeholder="Write something genuine…"></textarea>
 <div class="compose-foot"><span>Private and visible only to you and Fern.</span><button type="submit" class="primary">Send message ↗</button></div></form>
-<p id="chat-status" role="status" class="status"></p></section>
+<p id="chat-status" role="status" class="status"></p></div></section>
 </main><script src="/chat/chat.js" defer></script></body></html>
