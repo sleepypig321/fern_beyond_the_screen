@@ -200,3 +200,25 @@ body[data-page="creator"] .portrait-grid>div:last-child,body[data-page="stargaze
  .interior-hero h1{font-size:clamp(49px,10.8vw,79px)}.interior-hero::after{right:-170px;opacity:.24}
 }
 @media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}*,*:before,*:after{animation:none!important;transition:none!important}}
+
+/* A personal note in the About Me story, not another generic feature card. */
+.about-margin-note{
+  margin:38px 0 32px;
+  border-left:1px solid rgba(220,175,142,.7);
+  padding:8px 0 9px 26px;
+  background:linear-gradient(90deg,rgba(134,51,71,.17),transparent 78%);
+}
+.about-margin-note span{
+  display:block;
+  font:500 10px/1.6 var(--nv-ui);
+  color:#e7b795;
+  text-transform:uppercase;
+  letter-spacing:.20em;
+  margin-bottom:12px;
+}
+.about-margin-note p{
+  max-width:520px;
+  font:italic 400 clamp(22px,2.4vw,32px)/1.35 var(--nv-italic);
+  color:#f1d4c3;
+  margin:0;
+}
