@@ -269,3 +269,25 @@ body[data-page="connection"] .chapter-note:nth-child(even) h3{
   .hero-copy .intro,.hero-deck,.inquiry-intro>p{line-height:1.45}
   .site-chapters-grid h3{font-size:clamp(40px,11vw,56px)}
 }
+
+/* Preserve the original Amanita composition from the approved homepage preview.
+   No tinted photo filters or dark gradients masking the mushroom and its ferns. */
+body[data-page="home"] .hero-art{
+  background:#3b0308;
+  overflow:hidden;
+}
+body[data-page="home"] .hero-art img{
+  object-fit:contain;
+  object-position:center center;
+  filter:none;
+  background:#3b0308;
+}
+body[data-page="home"] .hero-art::before{
+  background:none;
+  box-shadow:none;
+}
+body[data-page="home"] .hero-art .art-caption{
+  background:#240309c7;
+  color:#eac8a8;
+  padding:5px 10px;
+}
