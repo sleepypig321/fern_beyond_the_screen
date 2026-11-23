@@ -81,3 +81,12 @@ body[data-page="inquire"] .threshold-transition-veil{position:absolute;inset:0;z
 body[data-page="inquire"] .threshold.is-entering .threshold-transition-veil{opacity:.95}
 body[data-page="inquire"] .threshold.is-opening .threshold-act,body[data-page="inquire"] .threshold.is-opening .threshold-door{pointer-events:none}
 @media(prefers-reduced-motion:reduce){body[data-page="inquire"] .threshold,body[data-page="inquire"] .threshold-title-block,body[data-page="inquire"] .threshold-transition-veil{transition:none}}
+
+/* Crimson illumination only on the Seed of Life engraved on the black door. */
+body[data-page="inquire"] .threshold-door .threshold-door-engraving{
+ opacity:1;
+ filter:brightness(0) saturate(100%) invert(20%) sepia(95%) saturate(3840%) hue-rotate(335deg) brightness(104%) contrast(109%)
+  drop-shadow(0 0 5px rgba(255,42,75,.95))
+  drop-shadow(0 0 15px rgba(204,13,48,.78))
+  drop-shadow(0 0 29px rgba(177,5,35,.56));
+}
