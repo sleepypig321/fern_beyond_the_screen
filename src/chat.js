@@ -176,7 +176,7 @@ export class ChatHub extends DurableObject {
          this.db.exec("UPDATE chat_users SET status='blocked' WHERE id=?",id);
          this.db.exec("DELETE FROM sessions WHERE user_id=?",id);
          this.db.exec("DELETE FROM visitor_push_subscriptions WHERE user_id=?",id);
-         return json({ok:true});
+         return json({ok:true,name:row.name,email:row.email});
        }
        if(row.status==="declined")return err(409,"Declined inquiries cannot be approved without reopening them.");
        if(row.status==="approved"&&this.rows("SELECT id FROM chat_users WHERE id=?",id).length)return err(409,"Already registered.");
