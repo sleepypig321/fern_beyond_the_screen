@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="robots" content="noindex,nofollow,noarchive"><meta name="theme-color" content="#16090f"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"><meta name="apple-mobile-web-app-title" content="Fern Inbox">
+<title>Fern · Private Inbox</title>
+<link rel="icon" href="/assets/mushroom-mark.svg" type="image/svg+xml"><link rel="apple-touch-icon" href="/assets/mushroom-mark.svg">
+<link rel="manifest" href="/admin/manifest.webmanifest">
+<link rel="stylesheet" href="/admin/admin.css"></head>
+<body>
+<header class="top"><a class="brand" href="/"><img src="/assets/mushroom-mark.svg" alt=""><span><strong>Fern.</strong><small>PRIVATE CORRESPONDENCE</small></span></a>
+<div id="admin-actions" hidden><button id="online-button" type="button" class="presence" aria-pressed="false"><span class="dot"></span><span id="online-label">Offline</span></button><button id="push-button" type="button" class="subtle">Enable notifications</button><button id="logout" type="button" class="subtle">Sign out</button></div></header>
+<main>
+<section id="admin-login" class="sign-in"><span class="overline">FOR FERN'S EYES ONLY</span><h1>Your private<br><em>inbox.</em></h1><p>This area is reserved for the administrator. Access requires your private password.</p><form id="login-form"><label for="admin-password">Administrator password</label><input id="admin-password" type="password" autocomplete="current-password" required minlength="8" placeholder="Enter your private password"><button class="primary">Unlock inbox</button></form><p class="message" id="login-status" role="status"></p></section>
+<section id="admin-app" class="admin-layout" hidden>
+<aside class="sidebar"><div class="side-heading"><span class="overline">THE PRIVATE SALON</span><h1>Messages<span>.</span></h1></div>
+<nav class="tabs" aria-label="Inbox sections"><button id="tab-inquiries" class="active" type="button">Introductions <span id="inquiry-count">0</span></button><button id="tab-conversations" type="button">Conversations <span id="thread-count">0</span></button></nav>
+<div class="admin-help"><strong>How invitations work</strong><p>Review an introduction first. When you approve it, only that applicant receives a one-time registration link. No public chat signups.</p></div>
+<div class="install"><strong>Install Fern Inbox</strong><p>On iPhone, open this page in Safari, then Share → Add to Home Screen. On Android, use your browser's Install app option. Enable notifications inside the installed app.</p><button type="button" id="install-prompt" class="outline" hidden>Install app</button></div>
+</aside>
+<section class="list-pane" aria-label="Inbox list"><div class="pane-heading"><span id="list-label">NEW INTRODUCTIONS</span><button type="button" id="refresh" class="refresh">Refresh ↻</button></div><div id="item-list" class="item-list"><p class="empty">Your inbox is loading…</p></div></section>
+<section class="detail-pane" aria-label="Selected item"><div id="detail" class="detail"><div class="empty-state"><img src="/assets/mushroom-mark.svg" alt=""><h2>Choose a letter.</h2><p>Read introductions, approve who can register, or reply to private messages.</p></div></div></section>
+</section>
+</main><div id="app-status" class="toast" role="status" aria-live="polite"></div>
+<script src="/admin/admin.js" defer></script></body></html>
