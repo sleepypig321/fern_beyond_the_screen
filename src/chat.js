@@ -43,6 +43,8 @@ export class ChatHub extends DurableObject {
   // Additive tables retain existing inquiries, messages and established sessions.
   this.db.exec("CREATE TABLE IF NOT EXISTS chat_profiles(user_id TEXT PRIMARY KEY,preferred_name TEXT NOT NULL DEFAULT '',region TEXT NOT NULL DEFAULT '',occupation TEXT NOT NULL DEFAULT '',about TEXT NOT NULL DEFAULT '',interests TEXT NOT NULL DEFAULT '',talking_points TEXT NOT NULL DEFAULT '',intentions TEXT NOT NULL DEFAULT '',updated_at INTEGER NOT NULL)");
   this.db.exec("CREATE TABLE IF NOT EXISTS admin_profile_notes(user_id TEXT PRIMARY KEY,note TEXT NOT NULL DEFAULT '',updated_at INTEGER NOT NULL)");
+  this.db.exec("CREATE TABLE IF NOT EXISTS visitor_push_subscriptions(endpoint TEXT PRIMARY KEY,user_id TEXT NOT NULL,subscription TEXT NOT NULL,created_at INTEGER NOT NULL)");
+  this.db.exec("CREATE INDEX IF NOT EXISTS visitor_push_by_user ON visitor_push_subscriptions(user_id)");
  }
  rows(query,...args){return sqlRows(this.db,query,...args)}
  profile(id){
@@ -101,6 +103,17 @@ export class ChatHub extends DurableObject {
   await Promise.allSettled(subs.map(async row=>{
     try{await webpush.sendNotification(JSON.parse(row.subscription),JSON.stringify(payload),{TTL:240})}
     catch(e){if([404,410].includes(e.statusCode))this.db.exec("DELETE FROM push_subscriptions WHERE endpoint=?",row.endpoint)}
+  }));
+ }
+ async announceVisitor(userId){
+  if(!this.env.VAPID_PUBLIC_KEY||!this.env.VAPID_PRIVATE_KEY||!this.env.VAPID_SUBJECT)return;
+  try{webpush.setVapidDetails(this.env.VAPID_SUBJECT,this.env.VAPID_PUBLIC_KEY,this.env.VAPID_PRIVATE_KEY)}
+  catch(error){console.log("Visitor push not configured",String(error));return;}
+  const subs=this.rows("SELECT endpoint,subscription FROM visitor_push_subscriptions WHERE user_id=?",userId);
+  // Intentionally generic notification text; never expose private messages in a lock-screen alert.
+  await Promise.allSettled(subs.map(async row=>{
+    try{await webpush.sendNotification(JSON.parse(row.subscription),JSON.stringify({title:"Fern · Private Chat",body:"You have a new private reply.",url:"/chat/",tag:"fern-private-reply"}),{TTL:360})}
+    catch(error){if([404,410].includes(error.statusCode))this.db.exec("DELETE FROM visitor_push_subscriptions WHERE endpoint=?",row.endpoint)}
   }));
  }
  async fetch(request){
@@ -162,6 +175,7 @@ export class ChatHub extends DurableObject {
          this.db.exec("UPDATE inquiries SET status='declined',invite_hash=NULL,invite_expires=NULL,updated_at=? WHERE id=?",t(),id);
          this.db.exec("UPDATE chat_users SET status='blocked' WHERE id=?",id);
          this.db.exec("DELETE FROM sessions WHERE user_id=?",id);
+         this.db.exec("DELETE FROM visitor_push_subscriptions WHERE user_id=?",id);
          return json({ok:true});
        }
        if(row.status==="declined")return err(409,"Declined inquiries cannot be approved without reopening them.");
@@ -183,6 +197,7 @@ export class ChatHub extends DurableObject {
          if(body.length<1||body.length>1000)return err(400,"Message must be 1–1000 characters.");
          if(user.status!=="active")return err(403,"This conversation is closed.");
          this.db.exec("INSERT INTO messages(thread_id,sender,body,created_at) VALUES(?,'admin',?,?)",id,body,t());
+         this.ctx.waitUntil(this.announceVisitor(id));
          return json({ok:true});
        }
      }
@@ -241,11 +256,27 @@ export class ChatHub extends DurableObject {
      if(!user||await passwordHash(pass,user.salt)!==user.password_hash)return err(401,"Email or password incorrect.");
      return json({ok:true,name:user.name},200,{"Set-Cookie":await this.newSession("visitor",user.id)});
    }
-   if(method==="POST"&&path==="/api/chat/logout")return this.logout(request,"visitor");
+   if(method==="POST"&&path==="/api/chat/logout"){
+     const user=await this.session(request,"visitor");
+     if(user)this.db.exec("DELETE FROM visitor_push_subscriptions WHERE user_id=?",user.id);
+     return this.logout(request,"visitor");
+   }
    if(path.startsWith("/api/chat/visitor/")){
      const user=await this.session(request,"visitor");
      if(!user)return err(401,"Register through an approved invitation or sign in.");
      if(method==="GET"&&path==="/api/chat/visitor/me")return json({ok:true,name:user.name,online:this.online()});
+     if(method==="GET"&&path==="/api/chat/visitor/push-key")return json({ok:true,publicKey:this.env.VAPID_PUBLIC_KEY||null});
+     if(method==="POST"&&path==="/api/chat/visitor/push-subscribe"){
+       const d=await readJson(request),sub=d?.subscription;
+       if(!validPush(sub))return err(400,"Invalid notification subscription.");
+       this.db.exec("INSERT INTO visitor_push_subscriptions(endpoint,user_id,subscription,created_at) VALUES(?,?,?,?) ON CONFLICT(endpoint) DO UPDATE SET user_id=excluded.user_id,subscription=excluded.subscription,created_at=excluded.created_at",sub.endpoint,user.id,JSON.stringify(sub),t());
+       return json({ok:true});
+     }
+     if(method==="POST"&&path==="/api/chat/visitor/push-unsubscribe"){
+       const d=await readJson(request);
+       if(typeof d?.endpoint==="string")this.db.exec("DELETE FROM visitor_push_subscriptions WHERE endpoint=? AND user_id=?",d.endpoint,user.id);
+       return json({ok:true});
+     }
      if(method==="GET"&&path==="/api/chat/visitor/profile"){
        const p=this.profile(user.id);
        if(!p)return err(404,"Profile unavailable.");
