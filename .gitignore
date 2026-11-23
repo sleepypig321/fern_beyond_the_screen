@@ -1,0 +1,22 @@
+# Local dependencies and build output
+node_modules/
+dist/
+.wrangler/
+.workercheck/
+*.log
+
+# Local environment and credentials. Keep all secrets in Cloudflare settings.
+.env
+.env.*
+.dev.vars
+.dev.vars.*
+*.pem
+*.key
+*.p12
+*service-account*.json
+wrangler.local.toml
+
+# OS/editor files
+.DS_Store
+.idea/
+.vscode/
