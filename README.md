@@ -50,21 +50,31 @@ public/portraits/unfiltered.webp
 
 A client-side script (`public/portraits.js`) automatically replaces a chapter placeholder when its image exists. The chapters are not required for the 10-photo homepage carousel to operate.
 
-## Private inquiry email + photo attachments
+## Private inquiry, approval, and chat
 
-`src/index.js` handles POST `/api/inquiry` with server-side validation, 25+ restriction, Cloudflare Turnstile spam prevention, and image-type verification (JPG/PNG/WebP, up to 3 MB). It sends the message and photo as an email attachment using Resend. It does **not** create public image URLs or write inquiries to a public database. Sender name, email, interests, regional location, introduction, and photo are sent to the private recipient address and subject to the email service's retention practices.
+An inquiry is submitted through `/inquire/letter/`, validated by Cloudflare Turnstile, and saved to a **private SQLite-backed Durable Object**. The form remains limited to visitors age 25+, requires a clear NON-EXPLICIT JPG/PNG/WebP photograph of up to 3 MB, and does not publish applicant photographs or information on the website.
 
-Before this can accept submissions, set the following environment variables and secrets on your Cloudflare Worker **fern-beyond-the-screen**:
+The administrator logs in at `/admin/` with the secret `ADMIN_PASSWORD`. Only the administrator can view submitted inquiries and photographs, **approve or decline** applicants, generate a one-time registration invitation, manage existing accounts, and reply through the inbox.
 
-- `RESEND_API_KEY`: Resend private API key, as a secret
-- `INQUIRY_FROM_EMAIL`: verified sender address on a domain configured with Resend; may be a plain environment variable
-- `INQUIRY_TO_EMAIL`: Fern's private recipient inbox (suggested: fern.croxton@outlook.com), as a secret
-- `TURNSTILE_SITE_KEY`: the public site key from a Cloudflare Turnstile widget configured for this site's domain
-- `TURNSTILE_SECRET_KEY`: the Turnstile private secret, as a secret
+Approved applicants receive an invitation by email (if Resend is configured), or the administrator can securely share the one-time link. Each link expires after seven days and works once. The applicant creates a password on `/chat/register/` and signs into `/chat/` afterward. There is no public self-registration page. The server enforces all approval rules; the front end does not grant access.
 
-**Never put API keys or the private recipient email in frontend HTML or GitHub files.** Until everything is configured, the form displays a "being connected" message and disables the Send button—no fake delivery success.
+Chat messages are accessible only via authenticated sessions. This is **private but not end-to-end encrypted**. The administrator sees all messages; approved users see only their own thread. Green **Online** status reflects a live administrator heartbeat and switches off after the app stops checking in.
 
-Privacy: form responses are emailed privately and not publicly displayed. The email delivery service and your inbox may retain attachments. Keep submissions secure and delete them if not needed. The site uses no public signups, public photos of visitors, or user profiles.
+The admin dashboard is a browser-installable PWA. Push notifications require a VAPID key pair, browser permission and supported PWA installation. Messages are stored until removed through future retention tooling; keep applicant data secure and avoid sharing login credentials.
+
+### Cloudflare settings (do not put secrets in GitHub)
+
+- `ADMIN_PASSWORD`: long, random administrator password, **required** before admin login works.
+- `TURNSTILE_SITE_KEY`: site key for Cloudflare Turnstile widget on this domain.
+- `TURNSTILE_SECRET_KEY`: corresponding secret.
+- `RESEND_API_KEY`: optional API key for sending approval invitations and inquiry notices.
+- `INQUIRY_FROM_EMAIL`: a Resend-verified sender address; optional for admin inbox, needed for automated invitation emails.
+- `INQUIRY_TO_EMAIL`: optional destination for extra inquiry email notifications, as a secret.
+- `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `VAPID_SUBJECT`: required for background web push notifications. Use a `mailto:` contact address for the subject **inside the secret only**, not public website HTML.
+
+The `CHAT_HUB` Durable Object binding and `ChatHub` SQLite class migration are defined in `wrangler.toml`. Cloudflare will provision this database on successful deployment. Until Turnstile is set up, inquiry submissions are disabled rather than falsely reporting a delivery.
+
+**Never put email addresses, passwords, API tokens, addresses, private photographs or home IP addresses in public HTML or source files.** Site-wide response headers block framing, request geolocation permission, and suppress referrer leakage. No web configuration can hide a device IP from its own ISP, the network it connects to, or all external services.
 
 ## Cloudflare deploy
 
