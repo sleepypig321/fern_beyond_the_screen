@@ -1,0 +1,31 @@
+
+body.letter-page{background:#0c060a}
+body.letter-page .letter-arrival{position:relative;isolation:isolate;overflow:hidden;padding:33px 0 66px;min-height:345px;background:radial-gradient(ellipse at 72% 42%,#811a3273,transparent 53%),linear-gradient(125deg,#080509,#240a14 62%,#11070d);border-bottom:1px solid #b88e7b70}
+body.letter-page .letter-arrival:before{content:"";position:absolute;inset:0;z-index:0;opacity:.30;pointer-events:none;background:url("/assets/seed-of-life-black.svg") 82% 35%/min(39vw,420px) no-repeat}
+body.letter-page .letter-arrival-floor{position:absolute;z-index:0;pointer-events:none;left:-10%;right:-10%;bottom:-39%;height:85%;background:url("/assets/rose-water-marble.svg") center/cover no-repeat;transform:perspective(800px) rotateX(49deg) scale(1.18);opacity:.78;filter:contrast(1.2)}
+body.letter-page .letter-arrival:after{content:"";position:absolute;z-index:0;inset:0;pointer-events:none;background:linear-gradient(180deg,#07040810 0%,#16070a1b 38%,#0e060ce5 100%)}
+body.letter-page .letter-arrival-content{position:relative;z-index:2;max-width:1200px;display:flex;flex-direction:column;align-items:flex-start}
+body.letter-page .letter-back{text-decoration:none;text-transform:uppercase;font:500 10px/1.5 var(--nv-ui);letter-spacing:.17em;color:#d9b39e;border-bottom:1px solid #b5907655;padding-bottom:9px;margin:0 0 26px}
+body.letter-page .letter-back:hover{color:#fff2e5}
+body.letter-page .letter-ornament{position:absolute;right:7%;top:80px;opacity:.55}
+body.letter-page .letter-ornament img{width:65px;height:65px}
+body.letter-page .letter-arrival h1{margin:9px 0 15px;font:400 clamp(59px,7vw,106px)/1.03 var(--nv-display);letter-spacing:-.05em;color:#f1dfd2}
+body.letter-page .letter-arrival h1 em{color:#e4b0a8;font:italic 500 1em var(--nv-italic);letter-spacing:0}
+body.letter-page .letter-arrival p{margin:0;font:500 clamp(24px,2.5vw,35px)/1.24 var(--nv-italic);color:#e5bdb4}
+body.letter-page #hello{position:relative;isolation:isolate;padding:55px 0 125px;background:radial-gradient(ellipse at 8% 12%,#5d193048,transparent 47%),linear-gradient(180deg,#11060c,#25101a 48%,#0d060b)}
+body.letter-page #hello:after{content:"";z-index:0;position:absolute;inset:0;pointer-events:none;opacity:.13;background:url("/assets/rose-water-marble.svg") center bottom/100% auto no-repeat}
+body.letter-page #hello>.shell{position:relative;z-index:1}
+body.letter-page .inquiry-intro{margin:0 0 40px 2%}
+body.letter-page .inquiry-intro h2{font-size:clamp(51px,5vw,79px);letter-spacing:-.035em;line-height:1.08;margin:10px 0 16px}
+body.letter-page .inquiry-intro h2 br{display:none}
+body.letter-page .inquiry-intro>p{max-width:730px}
+body.letter-page .inquiry-side{margin-top:34px;background:linear-gradient(140deg,#3814224d,transparent);border:1px solid #af86746b;border-right:0}
+body.letter-page .inquiry-form{box-shadow:9px 11px 0 #0b0409,10px 12px 0 #ab857073}
+.letter-arrival-curtain{display:none;pointer-events:none}
+html.from-door .letter-arrival-curtain{display:block;position:fixed;inset:0;z-index:200;pointer-events:none;background:radial-gradient(ellipse at 50% 45%,#551326,#10060c 75%);animation:room-curtain .85s cubic-bezier(.16,.65,.28,1) both}
+html.from-door body.letter-page .letter-arrival-content,html.from-door body.letter-page #hello>.shell{animation:room-approach .9s cubic-bezier(.16,.65,.28,1) both}
+@keyframes room-curtain{0%{opacity:1}30%{opacity:.94}100%{opacity:0;visibility:hidden}}
+@keyframes room-approach{from{opacity:.18;transform:scale(1.055) translateY(24px);filter:blur(3px)}to{opacity:1;transform:scale(1) translateY(0);filter:blur(0)}}
+@media(max-width:930px){body.letter-page .letter-arrival{min-height:325px}body.letter-page .letter-arrival-floor{height:65%;bottom:-24%}}
+@media(max-width:700px){body.letter-page .letter-arrival{padding:25px 0 50px;min-height:300px}body.letter-page .letter-arrival h1{font-size:clamp(54px,11vw,83px)}body.letter-page .letter-ornament{right:0;top:105px;opacity:.3}body.letter-page #hello{padding:48px 0 100px}body.letter-page .inquiry-intro{margin:0 0 25px}body.letter-page .inquiry-intro h2{font-size:clamp(47px,10vw,69px)}body.letter-page .inquiry-side{margin:0;border-right:1px solid #af86746b}}
+@media(prefers-reduced-motion:reduce){html.from-door .letter-arrival-curtain{display:none;animation:none}html.from-door body.letter-page .letter-arrival-content,html.from-door body.letter-page #hello>.shell{animation:none}}

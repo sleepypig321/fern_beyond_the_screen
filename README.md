@@ -13,7 +13,8 @@ An independent, private dating-introduction website for Fern, with a deep burgun
 - /my-world/ — My World
 - /connection/ — Connection and values
 - /conversation/ — Conversation starters
-- /inquire/ — Private introduction form with photo
+- /inquire/ — animated black door, then a camera zoom into the inquiry room
+- /inquire/letter/ — dedicated private letter and photo form, beyond the door
 
 Every page has its own distinct URL, with shared branding and navigation. The homepage gallery is a separate collection of up to ten real photographs, independent of the four personality chapter pages.
 
@@ -76,3 +77,7 @@ Privacy: form responses are emailed privately and not publicly displayed. The em
 Changes in `main` should trigger a redeploy only if GitHub/Cloudflare automatic builds are connected. This repository update by itself is not proof of a live deployment.
 
 Search engine indexing is discouraged with noindex + robots.txt but this **does not** restrict site access; anyone with the URL can view public content and public photos.
+
+## Doorway interaction
+
+Opening the black door on `/inquire/` rotates the door, then zooms the camera forward into `/inquire/letter/`, a separate page carrying the same marble water, rose petals, crimson light and letter styling. The form is only on the second page; the backend, 25+ age validation and Turnstile configuration remain unchanged. Direct links work without animation or JavaScript; reduced-motion visitors get immediate navigation. This is a visual entrance, not a security gate.

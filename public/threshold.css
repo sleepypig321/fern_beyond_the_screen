@@ -70,3 +70,14 @@ body[data-page="inquire"] #hello:after{pointer-events:none}
  body[data-page="inquire"] #hello{animation:none}
  body[data-page="inquire"] .threshold-act span:last-child{transition:none}
 }
+/* Cinematic passage through an arched doorway. */
+body[data-page="inquire"] .threshold{--door-origin-x:70%;--door-origin-y:50%;--door-shift-x:0px;--door-shift-y:0px;transform-origin:var(--door-origin-x) var(--door-origin-y);transform:translate(0,0) scale(1);transition:transform 1050ms cubic-bezier(.3,.61,.18,1),filter 1050ms ease;will-change:transform}
+body[data-page="inquire"] .threshold.is-entering{transform:translate(var(--door-shift-x),var(--door-shift-y)) scale(4.4);filter:brightness(.56)}
+body[data-page="inquire"] .threshold-title-block{transition:opacity .52s,transform .6s}
+body[data-page="inquire"] .threshold.is-entering .threshold-title-block{opacity:0;transform:translateX(-40px) scale(.94)}
+body[data-page="inquire"] .threshold-act,body[data-page="inquire"] .threshold-door{text-decoration:none}
+body[data-page="inquire"] .threshold-door:focus-visible{outline:3px solid #ebbe94;outline-offset:7px}
+body[data-page="inquire"] .threshold-transition-veil{position:absolute;inset:0;z-index:15;pointer-events:none;opacity:0;background:radial-gradient(ellipse at 50% 48%,#6c1830,#0c050a 75%);transition:opacity .82s .25s}
+body[data-page="inquire"] .threshold.is-entering .threshold-transition-veil{opacity:.95}
+body[data-page="inquire"] .threshold.is-opening .threshold-act,body[data-page="inquire"] .threshold.is-opening .threshold-door{pointer-events:none}
+@media(prefers-reduced-motion:reduce){body[data-page="inquire"] .threshold,body[data-page="inquire"] .threshold-title-block,body[data-page="inquire"] .threshold-transition-veil{transition:none}}
