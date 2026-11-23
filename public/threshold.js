@@ -6,6 +6,7 @@
   const button=document.getElementById("threshold-enter");
   const live=document.getElementById("threshold-status");
   if(!scene||!entry||!door||!button)return;
+  entry.hidden=true;
   let opened=false;
   function reveal(){
     if(opened)return;
