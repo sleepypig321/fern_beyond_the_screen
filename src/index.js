@@ -33,14 +33,25 @@ function withNoCache(response){
   const headers=new Headers(response.headers);headers.set("Cache-Control","no-store");headers.set("Referrer-Policy","no-referrer");headers.set("X-Content-Type-Options","nosniff");headers.set("X-Frame-Options","DENY");
   return new Response(response.body,{status:response.status,statusText:response.statusText,headers});
 }
-async function sendEmail(env,recipient,subject,body,attachments=[]){
-  if(!env.RESEND_API_KEY||!env.INQUIRY_FROM_EMAIL)return false;
-  const res=await fetch("https://api.resend.com/emails",{
-    method:"POST",headers:{Authorization:"Bearer "+env.RESEND_API_KEY,"Content-Type":"application/json"},
-    body:JSON.stringify({from:env.INQUIRY_FROM_EMAIL,to:[recipient],subject,text:body,attachments}),
-    signal:AbortSignal.timeout(12000)
-  });
-  return res.ok;
+function escapeEmail(value){
+ return String(value??"").replace(/[&<>"']/g,char=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[char]));
+}
+function elegantEmail({eyebrow,title,paragraphs=[],actionText="",actionUrl="",footnote=""}){
+ const p=paragraphs.map(line=>'<p style="font:16px/1.8 Georgia,serif;color:#f1dacf;margin:0 0 18px">'+escapeEmail(line)+'</p>').join("");
+ const action=actionText&&actionUrl?'<p style="margin:32px 0"><a href="'+escapeEmail(actionUrl)+'" style="display:inline-block;background:#d9b592;color:#2d0e1a;text-decoration:none;font:bold 13px/1.4 Arial,sans-serif;letter-spacing:1px;padding:17px 23px;border:1px solid #efd5b7">'+escapeEmail(actionText)+'</a></p>':"";
+ return '<!doctype html><html><head><meta charset="utf-8"></head><body style="margin:0;padding:32px 12px;background:#10070d"><div style="max-width:590px;margin:auto;padding:46px 35px;border:1px solid #b88676;background:#260d19"><p style="font:11px Arial,sans-serif;letter-spacing:2px;color:#d4a095;text-transform:uppercase">'+escapeEmail(eyebrow)+'</p><h1 style="font:normal 43px/1.1 Georgia,serif;color:#f6e7dc;margin:20px 0 30px">'+escapeEmail(title)+'</h1>'+p+action+'<div style="border-top:1px solid #805463;padding-top:22px;font:12px/1.7 Arial,sans-serif;color:#c6a7a2">'+escapeEmail(footnote)+'<p style="margin:18px 0 0;color:#e8c4ae">Fern, Beyond the Screen · Private Correspondence</p></div></div></body></html>';
+}
+async function sendEmail(env,recipient,subject,body,attachments=[],html=""){
+ if(!env.RESEND_API_KEY||!env.INQUIRY_FROM_EMAIL)return false;
+ const data={from:env.INQUIRY_FROM_EMAIL,to:[recipient],subject,text:body};
+ if(attachments.length)data.attachments=attachments;
+ if(html)data.html=html;
+ const res=await fetch("https://api.resend.com/emails",{
+   method:"POST",headers:{Authorization:"Bearer "+env.RESEND_API_KEY,"Content-Type":"application/json"},
+   body:JSON.stringify(data),signal:AbortSignal.timeout(12000)
+ });
+ if(!res.ok)console.log("Resend email delivery failed",res.status);
+ return res.ok;
 }
 async function verifyTurnstile(token, secret, ip) {
   const data = new FormData();
@@ -104,17 +115,24 @@ async function inquiry(request, env, ctx) {
     const detail=await saved.json().catch(()=>({}));
     return json({ok:false,error:detail.error||"Your introduction could not be saved. Please retry."},saved.status);
   }
-  // The admin inbox is authoritative. Optional email notifications are supplementary.
+  // Notify Fern, but keep applicant images and detailed answers in the secured inbox.
   if(env.RESEND_API_KEY && env.INQUIRY_FROM_EMAIL && env.INQUIRY_TO_EMAIL){
-    const text=["New inquiry — Fern, Beyond the Screen","",
-      "First name: "+name,"Age: "+age,"City/region: "+city,"Reply email: "+email,
-      "Interests: "+interests,"What we might connect over: "+connection,
-      "","Their introduction:",message,"",
-      "The sender confirmed they are 25+ and consented to privately sharing their information and photograph.",
-      "Review and approve this application through the private administrator dashboard."].join("\n");
-    ctx.waitUntil(sendEmail(env,env.INQUIRY_TO_EMAIL,"New private introduction — Fern, Beyond the Screen",text,
-      [{filename:"introduction-photo."+type.ext,content:toBase64(bytes),content_type:type.mime}])
-      .catch(error=>console.error("Optional inquiry notification unavailable",String(error))));
+    const inboxUrl=new URL("/admin/?inquiry="+encodeURIComponent(id),request.url).toString();
+    const body=[
+      "You've received an inquiry — Fern, Beyond the Screen","",
+      name+" has submitted a private introduction.",
+      "Sign in to your private admin inbox to see the photo and full application, then approve or decline:",
+      inboxUrl,"","Administrator sign-in is required."
+    ].join("\n");
+    const html=elegantEmail({
+      eyebrow:"A letter awaits",
+      title:"You've received an inquiry.",
+      paragraphs:[name+" has submitted a private introduction.","Open your administrator inbox to read the letter, review the photograph, and decide whether to invite them into private chat."],
+      actionText:"REVIEW THIS INQUIRY",actionUrl:inboxUrl,
+      footnote:"This link leads to the password-protected admin area. No decision can be made directly from email."
+    });
+    ctx.waitUntil(sendEmail(env,env.INQUIRY_TO_EMAIL,"New inquiry — Fern, Beyond the Screen",body,[],html)
+      .catch(error=>console.error("Inquiry email notification failed",String(error))));
   }
   return json({ok:true,message:"Your introduction has been received for private review. If approved, you'll receive a registration invitation."});
 
@@ -133,18 +151,46 @@ export default {
           return json({ok:false,error:"Request too large."},413);
       }
       const response=await hub(env).fetch(request);
-      if(url.pathname.match(/^\/api\/chat\/admin\/inquiries\/[a-f0-9-]{36}\/approve$/)&&request.method==="POST"&&response.ok){
-        const details=await response.json();
-        const invite=url.origin+"/chat/register/?token="+encodeURIComponent(details.token);
-        let emailed=false;
-        if(env.RESEND_API_KEY&&env.INQUIRY_FROM_EMAIL){
-          try {emailed=await sendEmail(env,details.email,
-            "Your private invitation — Fern, Beyond the Screen",
-            "Hello "+details.name+",\n\nYour introduction has been approved. You can create a private chat account using the invitation below:\n\n"+invite+
-            "\n\nThis invitation can be used only once and expires in seven days. Please do not forward it.\n\nFern, Beyond the Screen");}
-          catch(e){console.log("Invitation email not delivered",String(e));}
+      const decision=url.pathname.match(/^\/api\/chat\/admin\/inquiries\/([a-f0-9-]{36})\/(approve|decline)$/);
+      if(decision&&request.method==="POST"&&response.ok){
+        const result=await response.json();
+        // We never email a rejection's name from a URL or an unverified public field:
+        // these details come from the authenticated admin decision in the ChatHub.
+        const name=result.name||"there",recipient=result.email;
+        if(decision[2]==="approve"){
+          const invite=url.origin+"/chat/register/?token="+encodeURIComponent(result.token);
+          const body=["Hello "+name+",","","Thank you for your thoughtful introduction.",
+            "I'd like to invite you to continue our conversation somewhere a little more private.",
+            "Create your personal chat account with this invitation:",invite,"",
+            "The link is for you alone, is valid once, and expires in seven days.",
+            "Once registered, you'll be guided to your private chat, where you may also install the app on your phone.",
+            "","Warmly,","Fern"].join("\n");
+          const html=elegantEmail({
+            eyebrow:"Your introduction was accepted",
+            title:"An invitation, just for you.",
+            paragraphs:["Hello "+name+",","Thank you for your thoughtful introduction. I'd like to invite you to continue our conversation somewhere a little more private.","Use the button below to create your account. After registering, you can install our private chat on your phone, if you wish."],
+            actionText:"ACCEPT YOUR INVITATION",actionUrl:invite,
+            footnote:"This private invitation can be used once and expires in seven days. Please don't forward this link."
+          });
+          let emailed=false;
+          try{emailed=await sendEmail(env,recipient,"A private invitation — Fern, Beyond the Screen",body,[],html);}
+          catch(error){console.log("Approval invitation email error",String(error));}
+          return json({ok:true,inviteUrl:invite,emailed,expires:result.expires});
         }
-        return json({ok:true,inviteUrl:invite,emailed,expires:details.expires});
+        const body=["Hello "+name+",","","Thank you for taking the time to introduce yourself.",
+          "I appreciate the thought you put into reaching out. After considering your introduction, I won't be moving forward with a private conversation.",
+          "I wish you all the best in finding a meaningful connection.",
+          "","Warmly,","Fern"].join("\n");
+        const html=elegantEmail({
+          eyebrow:"A personal note",
+          title:"Thank you for reaching out.",
+          paragraphs:["Hello "+name+",","I appreciate you taking the time to share a little of yourself with me. After considering your introduction, I won't be continuing into a private conversation.","I hope you find a connection that feels easy, genuine, and right for you."],
+          footnote:"No registration link has been issued. You do not need to take any further action."
+        });
+        let emailed=false;
+        try{emailed=await sendEmail(env,recipient,"Thank you for your introduction — Fern, Beyond the Screen",body,[],html);}
+        catch(error){console.log("Decline response email error",String(error));}
+        return json({ok:true,emailed});
       }
       return withNoCache(response);
     }
