@@ -280,6 +280,9 @@ body[data-page="home"] .hero-art{
   overflow:visible;
 }
 body[data-page="home"] .hero-art img{
+  align-self:flex-end;
+  height:auto;
+  aspect-ratio:400 / 496;
   object-fit:contain;
   object-position:center bottom;
   background:transparent;
