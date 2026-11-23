@@ -352,3 +352,19 @@ h1,h2,h3,
   .hero h1,.interior-hero h1,.inquiry-intro h2,
   .site-chapters h2,.fern-deck-section .character-heading h2{line-height:1.12;letter-spacing:-.012em}
 }
+
+/* Black framing against the burgundy page backgrounds. */
+.topbar,
+.mini-nav,
+.fern-photo-card,
+.portrait-gallery-grid a {
+  background-color: #000;
+}
+
+.fern-photo-card {
+  border-color: #000;
+}
+
+.fern-deck-controls button {
+  background: #000;
+}
