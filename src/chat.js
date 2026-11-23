@@ -43,7 +43,7 @@ async function deliverPush(env, subscription, payload, ttl) {
   const headers=new Headers(request.headers);
   headers.delete("Content-Length");
   return await fetch(subscription.endpoint,{
-   method:"POST",headers,body:Uint8Array.from(request.body).buffer,redirect:"error",signal:AbortSignal.timeout(8000)
+   method:"POST",headers,body:Uint8Array.from(request.body).buffer,redirect:"manual",signal:AbortSignal.timeout(8000)
   });
  } catch(error) {
   console.error("Push network request failed",error.name,error.code);
