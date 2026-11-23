@@ -25,3 +25,20 @@ h1,h2,h3{font-family:Grenze,Georgia,serif;font-weight:400;line-height:1.08;margi
 @media(max-width:1120px){.admin-layout{grid-template-columns:200px minmax(230px,.9fr) minmax(280px,1.2fr)}.sidebar{padding:27px 12px}}
 @media(max-width:850px){.admin-layout{display:grid;grid-template-columns:minmax(160px,.75fr) minmax(0,1.25fr)}.sidebar{grid-column:span 2;border-bottom:1px solid var(--line);display:grid;grid-template-columns:auto 1fr;gap:20px}.side-heading h1{font-size:48px;margin-bottom:0}.tabs{grid-template-columns:repeat(2,auto);align-items:center}.admin-help,.install{display:none}.list-pane{grid-column:1}.detail-pane{grid-column:2}.item-list,.detail-pane{max-height:unset}}
 @media(max-width:600px){.top{padding:13px}.brand strong{font-size:30px}.brand small{font-size:8px}.top #admin-actions{gap:5px}.top .subtle{font-size:9px;padding:7px}.presence{padding:7px;min-width:84px}.admin-layout{display:flex;flex-direction:column}.sidebar{display:block;padding:14px 18px}.side-heading{display:none}.tabs{display:flex;justify-content:space-evenly}.tabs button{flex:1;padding:11px;font-size:12px}.list-pane{border-right:0;border-bottom:1px solid var(--line);max-height:270px;overflow:auto}.pane-heading{padding:12px 16px}.item-list{max-height:195px}.item{padding:11px 17px}.item strong{font-size:24px}.detail-pane{max-height:unset;min-height:350px}.detail{padding:22px 16px}.chat-messages{max-height:42vh}}
+
+/* Approved visitor profile reference remains visible directly above each chat. */
+.admin-profile-card{border:1px solid var(--line);margin:25px 0;background:linear-gradient(133deg,#371924,#210e17)}
+.admin-profile-card>summary{cursor:pointer;padding:18px 20px;color:#f3d8c3;font:400 27px/1.2 Grenze,Georgia,serif;list-style-position:inside}
+.admin-profile-card[open]>summary{border-bottom:1px solid var(--line)}
+.admin-profile-body{padding:18px 20px 24px;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px 20px}
+.admin-profile-row{padding-bottom:11px;border-bottom:1px solid #ad85703a;min-width:0}
+.admin-profile-row strong{font:600 10px/1.4 Jost,sans-serif;letter-spacing:.10em;text-transform:uppercase;color:#e8bb97}
+.admin-profile-row p{margin:7px 0 0;font:400 14px/1.75 Jost,sans-serif;white-space:pre-wrap;overflow-wrap:anywhere;color:#f1dad0}
+.original-introduction,.profile-notes{grid-column:1/-1;padding-top:16px;border-top:1px solid var(--line)}
+.original-introduction>summary{cursor:pointer;font:400 25px Grenze,Georgia,serif;color:#f0d1bc;padding:9px 0}
+.original-fields{padding:18px 0 6px;display:grid;gap:14px}
+.profile-notes{display:grid;gap:10px}
+.profile-notes label{font:600 11px Jost,sans-serif;letter-spacing:.1em;color:#f2d3bd;text-transform:uppercase}
+.profile-notes textarea{background:#12090e;border:1px solid var(--line);padding:14px;color:#f8e1d6;resize:vertical;font:400 14px/1.6 Jost,sans-serif}
+.profile-notes button{justify-self:start}.notes-feedback{color:#dabbac}
+@media(max-width:600px){.admin-profile-body{grid-template-columns:1fr;padding:15px}.admin-profile-card>summary{font-size:24px}}
