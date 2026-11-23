@@ -1,12 +1,14 @@
 /* The Nocturne edition — a custom editorial treatment, rather than a template.
    Black Seed of Life on an oxblood halo; antique gold and dark romance. */
-@import url('https://fonts.googleapis.com/css2?family=Bodoni+Moda:ital,opsz,wght@0,6..96,400;0,6..96,500;1,6..96,400&family=Cormorant+Garamond:ital,wght@0,400;0,500;1,400;1,500&family=Jost:wght@300;400;500;600&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Almendra+Display&family=Cormorant+Infant:ital,wght@0,400;0,500;0,600;1,400;1,500&family=Grenze:wght@400;500;600&family=Jost:wght@400;500;600&family=Libre+Caslon+Display&display=swap');
 :root{
- --serif:"Bodoni Moda",Didot,"Times New Roman",serif;
+ --serif:"Libre Caslon Display",Georgia,"Times New Roman",serif;
  --sans:"Jost","Helvetica Neue",Arial,sans-serif;
- --nv-display:"Bodoni Moda",Didot,"Times New Roman",serif;
- --nv-italic:"Cormorant Garamond",Georgia,serif;
+ --nv-display:"Libre Caslon Display",Georgia,"Times New Roman",serif;
+ --nv-italic:"Cormorant Infant",Georgia,serif;
  --nv-ui:"Jost","Helvetica Neue",Arial,sans-serif;
+ --nv-accent:"Grenze",Georgia,serif;
+ --nv-ornament:"Almendra Display",Georgia,serif;
  --nv-line:rgba(210,163,127,.42);
  --nv-cream:#f2e1d2;
 }
@@ -221,4 +223,49 @@ body[data-page="creator"] .portrait-grid>div:last-child,body[data-page="stargaze
   font:italic 400 clamp(22px,2.4vw,32px)/1.35 var(--nv-italic);
   color:#f1d4c3;
   margin:0;
+}
+
+/* Fern's selected type quartet: Libre Caslon Display / Cormorant Infant /
+   Grenze / Almendra Display. Readability takes precedence over thin display effects. */
+html{font-size:16px}
+body{font-family:var(--nv-ui);font-weight:400;line-height:1.75;color:#f0dfd3}
+h1,h2,h3{font-family:var(--nv-display);font-weight:400;letter-spacing:-.03em;line-height:1.12}
+em{font-family:var(--nv-italic);font-weight:500!important;letter-spacing:0}
+.hero h1,.interior-hero h1,.inquiry-intro h2,
+.site-chapters h2,.fern-deck-section .character-heading h2{
+  letter-spacing:-.055em;line-height:1.04}
+.hero h1{font-size:clamp(63px,7.4vw,118px)}
+.hero h1 em,.interior-hero h1 em{font-family:var(--nv-italic);font-weight:500!important}
+.hero-copy .intro,.hero-deck,.site-chapters-lead,.home-invite p,
+.interior-content .lead,.final-cta p,.inquiry-intro>p,
+.mind-interlude p,.fern-deck-section .character-heading>p{
+  font-family:var(--nv-italic);font-weight:500;line-height:1.42;letter-spacing:0}
+.interior-content p,.fern-deck-info>p,.inquiry-privacy p,.inquiry-form,
+.chapter-note p,.chapter-card p,.site-chapters-grid p,
+.inquiry-side>p,.underintro,.hero-copy .underintro{
+  font-family:var(--nv-ui);font-size:clamp(15px,1.15vw,17px);
+  line-height:1.85;color:#e5ccc0;letter-spacing:.006em}
+.inquiry-form label,.inquiry-form input,.inquiry-form textarea{
+  font-family:var(--nv-ui);font-size:16px;line-height:1.65}
+.inquiry-form input::placeholder,.inquiry-form textarea::placeholder{color:#c9aaa8;opacity:1}
+.navigation a,.mini-links a,.overline,.hero-kicker,.chapter-number,
+.hero-mark,.character-topline,.fern-deck-topline,.fern-deck-foot{
+  letter-spacing:.13em}
+.site-chapters-grid a:nth-child(2) h3,
+.site-chapters-grid a:nth-child(4) h3,
+body[data-page="connection"] .chapter-note:nth-child(even) h3{
+  font-family:var(--nv-accent);font-weight:400;letter-spacing:-.015em;line-height:1.03}
+.hero-divider,.threshold-door-monogram,.threshold-interior strong{
+  font-family:var(--nv-ornament);letter-spacing:.025em}
+.hero-divider{font-size:38px}
+.threshold-door-monogram{font-size:30px!important;letter-spacing:.1em!important}
+.threshold-interior strong{font-size:40px!important;font-weight:400}
+.about-margin-note p,.feature-quote{font-family:var(--nv-italic);font-weight:500;font-size:clamp(24px,2.5vw,38px);line-height:1.4}
+.faq-list summary{letter-spacing:-.025em}
+.mini-wordmark strong,.wordmark .w-main{letter-spacing:-.02em}
+@media(max-width:700px){
+  .hero h1{font-size:clamp(56px,13vw,86px)}
+  .interior-hero h1,.inquiry-intro h2{font-size:clamp(52px,10vw,80px)}
+  .hero-copy .intro,.hero-deck,.inquiry-intro>p{line-height:1.45}
+  .site-chapters-grid h3{font-size:clamp(40px,11vw,56px)}
 }
