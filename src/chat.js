@@ -246,12 +246,32 @@ export class ChatHub extends DurableObject {
      const row=this.rows("SELECT id,name,email,invite_expires,invite_used FROM inquiries WHERE invite_hash=? AND status='approved'",await hex(inv))[0];
      if(!row||row.invite_used||row.invite_expires<t())return err(410,"The invitation is invalid or expired.");
      if(this.rows("SELECT id FROM chat_users WHERE email=?",row.email).length)return err(409,"This email already has a chat account.");
-     const salt=rand(),hash=await passwordHash(pass,salt);
-     this.db.exec("INSERT INTO chat_users(id,email,name,salt,password_hash,created_at) VALUES(?,?,?,?,?,?)",row.id,row.email,row.name,salt,hash,t());
-     // Seed an editable profile from the applicant's own approved inquiry.
-     this.db.exec("INSERT OR IGNORE INTO chat_profiles(user_id,preferred_name,region,interests,talking_points,updated_at) SELECT id,name,city,interests,connection,? FROM inquiries WHERE id=?",t(),row.id);
-     this.db.exec("UPDATE inquiries SET invite_used=1,invite_hash=NULL,updated_at=? WHERE id=?",t(),row.id);
-     return json({ok:true,name:row.name},200,{"Set-Cookie":await this.newSession("visitor",row.id)});
+     const salt=rand();
+     let hash;
+     try {
+       hash=await passwordHash(pass,salt);
+     } catch(error) {
+       console.error("Chat registration password hashing failed", error.name, error.code);
+       return err(500,"Registration could not create your password hash. No account was created.");
+     }
+     const sessionToken=rand(),sessionHash=await hex(sessionToken),maxAge=30*86400;
+     const invitationHash=await hex(inv);
+     try {
+       return this.ctx.storage.transactionSync(()=>{
+         const current=this.rows("SELECT invite_expires,invite_used FROM inquiries WHERE id=? AND invite_hash=? AND status='approved'",row.id,invitationHash)[0];
+         if(!current||current.invite_used||current.invite_expires<t())return err(410,"The invitation is invalid or expired.");
+         if(this.rows("SELECT id FROM chat_users WHERE email=?",row.email).length)return err(409,"This email already has a chat account. Try signing in.");
+         const now=t();
+         this.db.exec("INSERT INTO chat_users(id,email,name,salt,password_hash,created_at) VALUES(?,?,?,?,?,?)",row.id,row.email,row.name,salt,hash,now);
+         this.db.exec("INSERT OR IGNORE INTO chat_profiles(user_id,preferred_name,region,interests,talking_points,updated_at) SELECT id,name,city,interests,connection,? FROM inquiries WHERE id=?",now,row.id);
+         this.db.exec("INSERT INTO sessions(hash,kind,user_id,expires) VALUES(?,?,?,?)",sessionHash,"visitor",row.id,now+maxAge*1000);
+         this.db.exec("UPDATE inquiries SET invite_used=1,invite_hash=NULL,updated_at=? WHERE id=?",now,row.id);
+         return json({ok:true,name:row.name},200,{"Set-Cookie":cookie("fern_chat_session",sessionToken,maxAge)});
+       });
+     } catch(error) {
+       console.error("Chat registration storage failed", error.name, error.code, error.message);
+       return err(500,"Registration could not save the account. Your invitation can be retried.");
+     }
    }
    if(method==="POST"&&path==="/api/chat/login"){
      if(await this.rate(request,"chat-login",12,15*60000))return err(429,"Too many attempts. Try later.");
