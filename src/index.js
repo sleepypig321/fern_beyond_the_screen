@@ -41,8 +41,43 @@ function elegantEmail({eyebrow,title,paragraphs=[],actionText="",actionUrl="",fo
  const action=actionText&&actionUrl?'<p style="margin:32px 0"><a href="'+escapeEmail(actionUrl)+'" style="display:inline-block;background:#d9b592;color:#2d0e1a;text-decoration:none;font:bold 13px/1.4 Arial,sans-serif;letter-spacing:1px;padding:17px 23px;border:1px solid #efd5b7">'+escapeEmail(actionText)+'</a></p>':"";
  return '<!doctype html><html><head><meta charset="utf-8"></head><body style="margin:0;padding:32px 12px;background:#10070d"><div style="max-width:590px;margin:auto;padding:46px 35px;border:1px solid #b88676;background:#260d19"><p style="font:11px Arial,sans-serif;letter-spacing:2px;color:#d4a095;text-transform:uppercase">'+escapeEmail(eyebrow)+'</p><h1 style="font:normal 43px/1.1 Georgia,serif;color:#f6e7dc;margin:20px 0 30px">'+escapeEmail(title)+'</h1>'+p+action+'<div style="border-top:1px solid #805463;padding-top:22px;font:12px/1.7 Arial,sans-serif;color:#c6a7a2">'+escapeEmail(footnote)+'<p style="margin:18px 0 0;color:#e8c4ae">Fern, Beyond the Screen · Private Correspondence</p></div></div></body></html>';
 }
-async function sendEmail(env,recipient,subject,body,attachments=[],html=""){
- if(!env.RESEND_API_KEY||!env.INQUIRY_FROM_EMAIL)return false;
+// Use the same EmailJS REST transport as Sites by Fern. Keys stay in Worker secrets.
+function emailJsReady(env){
+ return Boolean(env.EMAILJS_SERVICE_ID&&env.EMAILJS_PUBLIC_KEY&&env.EMAILJS_DECISION_TEMPLATE_ID);
+}
+function resendReady(env){
+ return Boolean(env.RESEND_API_KEY&&env.INQUIRY_FROM_EMAIL);
+}
+function emailReady(env){return emailJsReady(env)||resendReady(env);}
+async function sendEmail(env,recipient,subject,body,attachments=[],html="",options={}){
+ if(!validEmail(recipient))return false;
+ if(emailJsReady(env)){
+   // Existing Sites by Fern decision template expects these four fields.
+   // Never send applicant photographs through EmailJS: they stay inside the admin inbox.
+   if(attachments.length)return false;
+   const data={
+     service_id:env.EMAILJS_SERVICE_ID,
+     template_id:env.EMAILJS_DECISION_TEMPLATE_ID,
+     user_id:env.EMAILJS_PUBLIC_KEY,
+     template_params:{
+       to_email:recipient,
+       subject,
+       message:body,
+       action_url:options.actionUrl||"",
+       action_label:options.actionLabel||""
+     }
+   };
+   if(env.EMAILJS_PRIVATE_KEY)data.accessToken=env.EMAILJS_PRIVATE_KEY;
+   const res=await fetch("https://api.emailjs.com/api/v1.0/email/send",{
+     method:"POST",
+     headers:{"Content-Type":"application/json"},
+     body:JSON.stringify(data),
+     signal:AbortSignal.timeout(12000)
+   });
+   if(!res.ok)console.log("EmailJS delivery rejected request",res.status);
+   return res.ok;
+ }
+ if(!resendReady(env))return false;
  const data={from:env.INQUIRY_FROM_EMAIL,to:[recipient],subject,text:body};
  if(attachments.length)data.attachments=attachments;
  if(html)data.html=html;
@@ -116,7 +151,7 @@ async function inquiry(request, env, ctx) {
     return json({ok:false,error:detail.error||"Your introduction could not be saved. Please retry."},saved.status);
   }
   // Notify Fern, but keep applicant images and detailed answers in the secured inbox.
-  if(env.RESEND_API_KEY && env.INQUIRY_FROM_EMAIL && env.INQUIRY_TO_EMAIL){
+  if(emailReady(env) && env.INQUIRY_TO_EMAIL){
     const inboxUrl=new URL("/admin/?inquiry="+encodeURIComponent(id),request.url).toString();
     const body=[
       "You've received an inquiry — Fern, Beyond the Screen","",
@@ -131,7 +166,7 @@ async function inquiry(request, env, ctx) {
       actionText:"REVIEW THIS INQUIRY",actionUrl:inboxUrl,
       footnote:"This link leads to the password-protected admin area. No decision can be made directly from email."
     });
-    ctx.waitUntil(sendEmail(env,env.INQUIRY_TO_EMAIL,"New inquiry — Fern, Beyond the Screen",body,[],html)
+    ctx.waitUntil(sendEmail(env,env.INQUIRY_TO_EMAIL,"New inquiry — Fern, Beyond the Screen",body,[],html,{actionUrl:inboxUrl,actionLabel:"REVIEW THIS INQUIRY"})
       .catch(error=>console.error("Inquiry email notification failed",String(error))));
   }
   return json({ok:true,message:"Your introduction has been received for private review. If approved, you'll receive a registration invitation."});
@@ -173,7 +208,7 @@ export default {
             footnote:"This private invitation can be used once and expires in seven days. Please don't forward this link."
           });
           let emailed=false;
-          try{emailed=await sendEmail(env,recipient,"A private invitation — Fern, Beyond the Screen",body,[],html);}
+          try{emailed=await sendEmail(env,recipient,"A private invitation — Fern, Beyond the Screen",body,[],html,{actionUrl:invite,actionLabel:"ACCEPT YOUR INVITATION"});}
           catch(error){console.log("Approval invitation email error",String(error));}
           return json({ok:true,inviteUrl:invite,emailed,expires:result.expires});
         }
@@ -188,7 +223,7 @@ export default {
           footnote:"No registration link has been issued. You do not need to take any further action."
         });
         let emailed=false;
-        try{emailed=await sendEmail(env,recipient,"Thank you for your introduction — Fern, Beyond the Screen",body,[],html);}
+        try{emailed=await sendEmail(env,recipient,"Thank you for your introduction — Fern, Beyond the Screen",body,[],html,{actionUrl:url.origin,actionLabel:"FERN, BEYOND THE SCREEN"});}
         catch(error){console.log("Decline response email error",String(error));}
         return json({ok:true,emailed});
       }
