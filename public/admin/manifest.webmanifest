@@ -1,0 +1,19 @@
+{
+  "name": "Fern · Private Inbox",
+  "short_name": "Fern Inbox",
+  "description": "Private messages and approved introductions for Fern, Beyond the Screen.",
+  "start_url": "/admin/",
+  "scope": "/admin/",
+  "id": "/admin/",
+  "display": "standalone",
+  "background_color": "#11080e",
+  "theme_color": "#16090f",
+  "icons": [
+    {
+      "src": "/assets/mushroom-mark.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
