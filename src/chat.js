@@ -22,13 +22,23 @@ function validPush(s) {
     return u.protocol==="https:"&&allowed&&s.keys.auth.length<150&&s.keys.p256dh.length<200;
   }catch{return false}
 }
-function passwordHash(password, salt) {
- return new Promise((resolve, reject) => {
-  pbkdf2(password, salt, 160000, 32, "sha256", (error, hash) => {
-   if (error) reject(error);
-   else resolve(hash.toString("hex"));
+const passwordHashPrefix = "pbkdf2-sha256:100000:";
+async function passwordHash(password, salt, storedHash = passwordHashPrefix) {
+ if (!storedHash.startsWith(passwordHashPrefix)) {
+  // Preserve verification for any unprefixed hashes created by earlier versions.
+  return new Promise((resolve, reject) => {
+   pbkdf2(password, salt, 160000, 32, "sha256", (error, hash) => {
+    if (error) reject(error);
+    else resolve(hash.toString("hex"));
+   });
   });
- });
+ }
+ const encoder = new TextEncoder();
+ const key = await crypto.subtle.importKey("raw", encoder.encode(password), "PBKDF2", false, ["deriveBits"]);
+ const bits = await crypto.subtle.deriveBits({
+  name: "PBKDF2", hash: "SHA-256", salt: encoder.encode(salt), iterations: 100000
+ }, key, 256);
+ return passwordHashPrefix + Array.from(new Uint8Array(bits), byte => byte.toString(16).padStart(2, "0")).join("");
 }
 
 export class ChatHub extends DurableObject {
@@ -278,7 +288,7 @@ export class ChatHub extends DurableObject {
      const d=await readJson(request),email=trimmed(d.email,254).toLowerCase(),pass=d.password;
      if(!email||typeof pass!=="string"||pass.length>300)return err(401,"Email or password incorrect.");
      const user=this.rows("SELECT * FROM chat_users WHERE email=? AND status='active'",email)[0];
-     if(!user||await passwordHash(pass,user.salt)!==user.password_hash)return err(401,"Email or password incorrect.");
+     if(!user||await passwordHash(pass,user.salt,user.password_hash)!==user.password_hash)return err(401,"Email or password incorrect.");
      return json({ok:true,name:user.name},200,{"Set-Cookie":await this.newSession("visitor",user.id)});
    }
    if(method==="POST"&&path==="/api/chat/logout"){
