@@ -1,5 +1,8 @@
 name = "fern-beyond-the-screen"
 compatibility_date = "2026-11-22"
+main = "src/index.js"
 
 [assets]
 directory = "./public"
+binding = "ASSETS"
+run_worker_first = ["/api/*"]
