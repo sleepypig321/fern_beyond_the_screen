@@ -82,8 +82,12 @@ async function approve(d){
  }catch(x){toast(x.message)}
 }
 async function decline(d){
- if(!confirm("Decline "+d.name+"? This will revoke any existing chat access."))return;
- try{await api("admin/inquiries/"+d.id+"/decline","POST",{});selected="";await refresh();blank();toast("Request declined.")}catch(x){toast(x.message)}
+ if(!confirm("Decline "+d.name+"? A courteous response will be emailed when email delivery is configured; any existing chat access will be revoked."))return;
+ try{
+  const result=await api("admin/inquiries/"+d.id+"/decline","POST",{});
+  selected="";await refresh();blank();
+  toast(result.emailed?"Application declined and a thoughtful email was sent.":"Application declined. Email wasn't sent; configure or check Resend to enable automatic responses.");
+ }catch(x){toast(x.message)}
 }
 async function showThread(id,scroll){
  if(mode!=="conversations"||!threads.some(x=>x.id===id))return;
@@ -172,5 +176,6 @@ setInterval(async()=>{if(!signedIn||document.visibilityState!=="visible")return;
 document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="visible"&&signedIn)refresh()});
 const query=new URLSearchParams(location.search);
 if(query.has("chat")){mode="conversations";selected=query.get("chat");el("tab-inquiries").classList.remove("active");el("tab-conversations").classList.add("active");el("list-label").textContent="APPROVED CONVERSATIONS"}
+else if(query.has("inquiry")){mode="inquiries";selected=query.get("inquiry");el("tab-inquiries").classList.add("active");el("tab-conversations").classList.remove("active");el("list-label").textContent="PRIVATE INTRODUCTIONS"}
 session();
 })();
