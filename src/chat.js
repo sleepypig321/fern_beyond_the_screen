@@ -1,3 +1,4 @@
+import { pbkdf2 } from "node:crypto";
 import { DurableObject } from "cloudflare:workers";
 import webpush from "web-push";
 
@@ -21,10 +22,13 @@ function validPush(s) {
     return u.protocol==="https:"&&allowed&&s.keys.auth.length<150&&s.keys.p256dh.length<200;
   }catch{return false}
 }
-async function passwordHash(password,salt) {
- const key=await crypto.subtle.importKey("raw",new TextEncoder().encode(password),"PBKDF2",false,["deriveBits"]);
- const bytes=await crypto.subtle.deriveBits({name:"PBKDF2",salt:new TextEncoder().encode(salt),iterations:160000,hash:"SHA-256"},key,256);
- return Array.from(new Uint8Array(bytes),x=>x.toString(16).padStart(2,"0")).join("");
+function passwordHash(password, salt) {
+ return new Promise((resolve, reject) => {
+  pbkdf2(password, salt, 160000, 32, "sha256", (error, hash) => {
+   if (error) reject(error);
+   else resolve(hash.toString("hex"));
+  });
+ });
 }
 
 export class ChatHub extends DurableObject {
