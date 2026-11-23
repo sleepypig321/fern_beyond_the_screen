@@ -4,9 +4,13 @@
   "private": true,
   "scripts": {
     "build": "node -e \"console.log('Static site ready for deployment')\"",
-    "deploy": "wrangler deploy"
+    "deploy": "wrangler deploy",
+    "check": "node --check src/index.js && node --check src/chat.js && node --check public/admin/admin.js && node --check public/admin/sw.js"
   },
   "devDependencies": {
     "wrangler": "^4.0.0"
+  },
+  "dependencies": {
+    "web-push": "3.6.7"
   }
 }
