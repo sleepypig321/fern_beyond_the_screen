@@ -100,7 +100,8 @@ export class ChatHub extends DurableObject {
  }
  rows(query,...args){return sqlRows(this.db,query,...args)}
  profileComplete(id){
-  return this.rows("SELECT user_id FROM confirmed_chat_profiles WHERE user_id=?",id).length>0;
+  const profile=this.rows("SELECT p.* FROM chat_profiles p JOIN confirmed_chat_profiles c ON c.user_id=p.user_id WHERE p.user_id=?",id)[0];
+  return Boolean(profile&&profile.preferred_name.trim().length>=2&&["region","occupation","about","interests","talking_points","intentions"].every(field=>profile[field].trim().length>0));
  }
  profile(id){
    const row=this.rows("SELECT u.id,u.name AS account_name,u.email,i.age,i.city,i.interests AS original_interests,i.connection AS original_connection,i.message AS original_message,i.created_at AS applied_at,p.preferred_name,p.region,p.occupation,p.about,p.interests,p.talking_points,p.intentions,p.updated_at AS profile_updated FROM chat_users u JOIN inquiries i ON i.id=u.id LEFT JOIN chat_profiles p ON p.user_id=u.id WHERE u.id=?",id)[0];
@@ -390,6 +391,7 @@ export class ChatHub extends DurableObject {
          if(typeof d[name]!=="string"||d[name].length>limit)return err(400,"Please check your profile fields and their length limits.");
          values[name]=d[name].trim();
        }
+       if(Object.values(values).some(value=>!value))return err(400,"Fill out all seven profile fields to unlock chat.");
        if(values.preferred_name.length<2)return err(400,"Please provide a name of at least two characters.");
        this.ctx.storage.transactionSync(()=>{
        this.db.exec("INSERT INTO chat_profiles(user_id,preferred_name,region,occupation,about,interests,talking_points,intentions,updated_at) VALUES(?,?,?,?,?,?,?,?,?) ON CONFLICT(user_id) DO UPDATE SET preferred_name=excluded.preferred_name,region=excluded.region,occupation=excluded.occupation,about=excluded.about,interests=excluded.interests,talking_points=excluded.talking_points,intentions=excluded.intentions,updated_at=excluded.updated_at",

@@ -21,21 +21,21 @@
  <p id="install-help" class="status" role="status"></p></div>
 </section>
 <div id="chat-availability" class="chat-online-note" hidden><span id="online-dot-inner" class="dot"></span><span id="online-text-inner">Checking Fern's availability…</span></div>
-<p id="profile-required" class="status" hidden>Review your private profile and save it to unlock chat.</p>
+<p id="profile-required" class="status" hidden>Complete all seven profile fields and save to unlock chat.</p>
 <details id="profile-panel" class="profile-panel">
 <summary><span>My private profile <small>Only you and Fern can see these details</small></span><span aria-hidden="true">＋</span></summary>
 <div class="profile-inside">
-<p class="profile-intro">Your profile begins with your approved introduction. Add a little more about yourself so Fern can remember what matters. All fields except your preferred name are optional.</p>
+<p class="profile-intro">Your profile begins with your approved introduction. Add a little more about yourself so Fern can remember what matters. All fields below are required.</p>
 <form id="profile-form" class="profile-form">
 <div class="profile-two">
 <label>Preferred name <b>*</b><input name="preferred_name" minlength="2" maxlength="60" required autocomplete="nickname" placeholder="What should Fern call you?"></label>
-<label>General city / region <small>(optional)</small><input name="region" maxlength="100" placeholder="Never share your full home address"></label>
+<label>General city / region <b>*</b><input name="region" required maxlength="100" placeholder="Never share your full home address"></label>
 </div>
-<label>Work, studies or projects <small>(optional)</small><input name="occupation" maxlength="100" placeholder="What keeps you busy?"></label>
-<label>A little more about me <small>(optional)</small><textarea name="about" maxlength="700" rows="3" placeholder="What would you like Fern to know?"></textarea></label>
-<label>Interests & favorite things <small>(optional)</small><textarea name="interests" maxlength="400" rows="2" placeholder="Things you enjoy or care about"></textarea></label>
-<label>Things we could talk about <small>(optional)</small><textarea name="talking_points" maxlength="350" rows="2" placeholder="Ideas, questions, and shared interests"></textarea></label>
-<label>What I'm looking for <small>(optional)</small><textarea name="intentions" maxlength="350" rows="2" placeholder="What kind of connection do you hope to find?"></textarea></label>
+<label>Work, studies or projects <b>*</b><input name="occupation" required maxlength="100" placeholder="What keeps you busy?"></label>
+<label>A little more about me <b>*</b><textarea name="about" required maxlength="700" rows="3" placeholder="What would you like Fern to know?"></textarea></label>
+<label>Interests & favorite things <b>*</b><textarea name="interests" required maxlength="400" rows="2" placeholder="Things you enjoy or care about"></textarea></label>
+<label>Things we could talk about <b>*</b><textarea name="talking_points" required maxlength="350" rows="2" placeholder="Ideas, questions, and shared interests"></textarea></label>
+<label>What I'm looking for <b>*</b><textarea name="intentions" required maxlength="350" rows="2" placeholder="What kind of connection do you hope to find?"></textarea></label>
 <div class="profile-controls"><button type="submit" class="primary">Save my profile</button><span id="profile-status" role="status" aria-live="polite"></span></div>
 </form><p class="profile-privacy">Your verified inquiry age and registration email remain attached to your account. Other visitors cannot view your profile.</p>
 </div></details>
