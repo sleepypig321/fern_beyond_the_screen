@@ -62,10 +62,10 @@ async function inquiry(request, env) {
   const consent = form.get("consent") === "yes";
   const turnstileToken = clean(form.get("cf-turnstile-response"), 2000);
   const photo = form.get("photo");
-  if (name.length < 2 || !/^\d{2,3}$/.test(ageValue) || !Number.isInteger(age) || age < 18 || age > 110 ||
+  if (name.length < 2 || !/^\d{2,3}$/.test(ageValue) || !Number.isInteger(age) || age < 25 || age > 110 ||
       city.length < 2 || !validEmail(email) || interests.length < 3 || connection.length < 3 ||
       message.length < 10 || !consent || !turnstileToken) {
-    return json({ok:false,error:"Please complete every required field, confirm you're 18+, and finish the security check."},400);
+    return json({ok:false,error:"Please complete every required field, confirm you're 25+, and finish the security check."},400);
   }
   if (!photo || typeof photo === "string" || typeof photo.arrayBuffer !== "function" ||
       photo.size < 100 || photo.size > MAX_PHOTO_BYTES) {
@@ -91,7 +91,7 @@ async function inquiry(request, env) {
     "Their introduction:",
     message,
     "",
-    "The sender confirmed they are 18+ and consented to emailing this information and their photo.",
+    "The sender confirmed they are 25+ and consented to emailing this information and their photo.",
     "The photo is attached to this email. It is not publicly posted by the website."
   ].join("\n");
   let sent;
