@@ -108,9 +108,9 @@ body>*{position:relative}
 .home-invite h3{font:400 clamp(39px,4.9vw,69px)/1 var(--nv-display);letter-spacing:-.07em}
 .home-invite p{font:400 23px/1.4 var(--nv-italic)}
 /* Inner pages: each has its own pacing and composition. */
-.interior-hero{min-height:440px;padding:105px 0 110px;background:linear-gradient(117deg,#1a080f,#351521 57%,#16080e)}
+.interior-hero{min-height:0;padding:clamp(28px,4vw,54px) 0;background:linear-gradient(117deg,#1a080f,#351521 57%,#16080e)}
 .hero-layout{grid-template-columns:minmax(0,1fr) minmax(100px,230px);gap:65px}
-.interior-hero h1{font:400 clamp(55px,9vw,133px)/.95 var(--nv-display);letter-spacing:-.084em}
+.interior-hero h1{font:400 clamp(40px,6vw,82px)/.95 var(--nv-display);letter-spacing:-.084em;margin:12px 0 14px}
 .hero-deck{font:400 clamp(22px,2.6vw,37px)/1.23 var(--nv-italic);color:#ecd1c2;max-width:720px}
 .hero-ornament{opacity:.65;display:flex;align-items:center;justify-content:center}
 .page-content{background:linear-gradient(120deg,#17090e,#1e0e15);padding:100px 0 135px}
@@ -199,7 +199,7 @@ body[data-page="creator"] .portrait-grid>div:last-child,body[data-page="stargaze
  .inquiry-side{margin:0;padding:29px;border:1px solid var(--nv-line)}.inquiry-form{margin-top:25px}
  body[data-page="my-world"] .chapter-notes{grid-template-columns:1fr}body[data-page="my-world"] .chapter-note:nth-child(n){border-left:0;padding:23px 0}
  .chapter-cards{grid-template-columns:1fr}.chapter-card{grid-column:span 12;padding:30px 15px;border-right:0;min-height:0}
- .interior-hero h1{font-size:clamp(49px,10.8vw,79px)}.interior-hero::after{right:-170px;opacity:.24}
+ .interior-hero::after{right:-170px;opacity:.24}
 }
 @media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}*,*:before,*:after{animation:none!important;transition:none!important}}
 
@@ -265,7 +265,8 @@ body[data-page="connection"] .chapter-note:nth-child(even) h3{
 .mini-wordmark strong,.wordmark .w-main{letter-spacing:-.02em}
 @media(max-width:700px){
   .hero h1{font-size:clamp(56px,13vw,86px)}
-  .interior-hero h1,.inquiry-intro h2{font-size:clamp(52px,10vw,80px)}
+  .interior-hero h1{font-size:clamp(36px,8vw,54px)}
+  .inquiry-intro h2{font-size:clamp(52px,10vw,80px)}
   .hero-copy .intro,.hero-deck,.inquiry-intro>p{line-height:1.45}
   .site-chapters-grid h3{font-size:clamp(40px,11vw,56px)}
 }
