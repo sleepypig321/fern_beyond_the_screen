@@ -271,28 +271,36 @@ body[data-page="connection"] .chapter-note:nth-child(even) h3{
   .site-chapters-grid h3{font-size:clamp(40px,11vw,56px)}
 }
 
-/* Preserve the original Amanita composition from the approved homepage preview.
-   No tinted photo filters or dark gradients masking the mushroom and its ferns. */
+/* Blend the Amanita artwork into the hero, as in the original preview. */
 body[data-page="home"] .hero-art{
-  background:#3b0308;
-  overflow:hidden;
+  position:relative;
+  border:0;
+  box-shadow:none;
+  background:transparent;
+  overflow:visible;
 }
 body[data-page="home"] .hero-art img{
   object-fit:contain;
-  object-position:center center;
-  filter:none;
-  background:#3b0308;
+  object-position:center bottom;
+  background:transparent;
+  filter:drop-shadow(14px 24px 25px #090104a6);
+  transform:scale(1.10);
+  transform-origin:center bottom;
+  mask-image:linear-gradient(to right,transparent 0%,#000 13%,#000 91%,transparent 100%),linear-gradient(to bottom,transparent 0%,#000 19%,#000 90%,transparent 100%);
+  mask-composite:intersect;
 }
 body[data-page="home"] .hero-art::before{
-  background:none;
-  box-shadow:none;
+  inset:6% -8% 0;
+  z-index:-1;
+  background:radial-gradient(ellipse at 66% 52%,#8b2d1e66,transparent 66%);
 }
 body[data-page="home"] .hero-art .art-caption{
-  background:#240309c7;
-  color:#eac8a8;
-  padding:5px 10px;
+  background:transparent;
+  text-shadow:0 2px 5px #100408;
 }
-
+@media(max-width:970px){
+  body[data-page="home"] .hero-art img{transform:none}
+}
 
 /* Fern's selected principal heading font: Grenze.
    Keep dramatic serif titles readable, and let Cormorant Infant carry romantic italics. */
