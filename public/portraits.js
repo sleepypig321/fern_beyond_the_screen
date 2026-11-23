@@ -1,0 +1,1 @@
+document.querySelectorAll(".portrait-holder[data-image]").forEach(function(frame){const img=new Image();img.className="real-photo";img.alt="A photograph of Fern";img.loading="lazy";img.onload=function(){frame.dataset.hasPhoto="true";frame.appendChild(img);};img.src=frame.dataset.image;});
