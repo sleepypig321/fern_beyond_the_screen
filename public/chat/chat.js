@@ -29,6 +29,50 @@ if(register){
 const login=E("visitor-login"),conversation=E("private-conversation"),log=E("chat-log"),status=E("chat-status");
 if(!login||!conversation)return;
 let active=false,last=0;
+let installPrompt=null;
+const profileForm=E("profile-form"),profileStatus=E("profile-status");
+let profileDirty=false;
+async function loadProfile(){
+ if(!active||profileDirty)return;
+ try{
+  const response=await api("visitor/profile"),p=response.profile||{};
+  for(const name of ["preferred_name","region","occupation","about","interests","talking_points","intentions"]){
+   if(profileForm.elements[name])profileForm.elements[name].value=p[name]||"";
+  }
+  profileStatus.textContent="";
+ }catch(error){profileStatus.textContent="Could not load your profile: "+error.message}
+}
+profileForm.addEventListener("input",()=>{profileDirty=true});
+profileForm.addEventListener("submit",async event=>{
+ event.preventDefault();
+ const button=profileForm.querySelector("button[type=submit]");button.disabled=true;
+ const fields=["preferred_name","region","occupation","about","interests","talking_points","intentions"];
+ const payload=Object.fromEntries(fields.map(f=>[f,profileForm.elements[f].value.trim()]));
+ try{await api("visitor/profile","POST",payload);profileDirty=false;profileStatus.textContent="Saved privately for you and Fern."}
+ catch(error){profileStatus.textContent=error.message}
+ finally{button.disabled=false}
+});
+window.addEventListener("beforeinstallprompt",e=>{e.preventDefault();installPrompt=e;E("install-chat").hidden=false});
+E("install-chat").addEventListener("click",async()=>{if(!installPrompt)return;await installPrompt.prompt();installPrompt=null;E("install-chat").hidden=true});
+E("enable-chat-notices").addEventListener("click",async()=>{
+ const button=E("enable-chat-notices");
+ try{
+  if(!("serviceWorker" in navigator)||!("PushManager" in window)||!("Notification" in window))throw Error("Reply alerts aren't supported by this browser.");
+  const config=await api("visitor/push-key");
+  if(!config.publicKey)throw Error("Reply alerts haven't been configured yet.");
+  const permission=await Notification.requestPermission();
+  if(permission!=="granted")throw Error("Notification permission wasn't granted.");
+  const reg=await navigator.serviceWorker.register("/chat/sw.js",{scope:"/chat/"});
+  await navigator.serviceWorker.ready;
+  const str=config.publicKey.replace(/-/g,"+").replace(/_/g,"/");
+  const key=Uint8Array.from(atob(str+"=".repeat((4-str.length%4)%4)),c=>c.charCodeAt(0));
+  let subscription=await reg.pushManager.getSubscription();
+  if(!subscription)subscription=await reg.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:key.buffer});
+  await api("visitor/push-subscribe","POST",{subscription:subscription.toJSON()});
+  button.textContent="Reply alerts enabled ✓";status.textContent="Your phone can notify you when Fern replies.";
+ }catch(error){status.textContent=error.message}
+});
+
 const bubble=m=>{
  const el=document.createElement("div");el.className="bubble"+(m.sender==="visitor"?" mine":"");
  const content=document.createElement("div");content.textContent=m.body;const when=document.createElement("small");when.textContent=(m.sender==="visitor"?"You":"Fern")+" · "+new Date(m.created_at).toLocaleString();
@@ -51,7 +95,7 @@ async function messages(){
  }catch(e){status.textContent=e.message}
 }
 async function restore(){
- try{const me=await api("visitor/me");active=true;login.hidden=true;conversation.hidden=false;E("chat-title").textContent="Hello, "+me.name+".";presence(me.online);await messages()}
+ try{const me=await api("visitor/me");active=true;login.hidden=true;conversation.hidden=false;E("chat-title").textContent="Hello, "+me.name+".";presence(me.online);await Promise.all([messages(),loadProfile()])}
  catch{active=false;login.hidden=false;conversation.hidden=true;try{const p=await api("presence");presence(p.online)}catch{}}
 }
 E("visitor-login-form").onsubmit=async event=>{

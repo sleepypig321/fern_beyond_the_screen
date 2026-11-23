@@ -1,0 +1,25 @@
+{
+  "id": "/chat/",
+  "name": "Fern · Private Conversation",
+  "short_name": "Fern Chat",
+  "description": "An invitation-only private correspondence with Fern",
+  "start_url": "/chat/",
+  "scope": "/chat/",
+  "display": "standalone",
+  "background_color": "#12080d",
+  "theme_color": "#16090f",
+  "icons": [
+    {
+      "src": "/chat/icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/chat/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}

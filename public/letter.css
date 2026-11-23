@@ -29,3 +29,7 @@ html.from-door body.letter-page .letter-arrival-content,html.from-door body.lett
 @media(max-width:930px){body.letter-page .letter-arrival{min-height:325px}body.letter-page .letter-arrival-floor{height:65%;bottom:-24%}}
 @media(max-width:700px){body.letter-page .letter-arrival{padding:25px 0 50px;min-height:300px}body.letter-page .letter-arrival h1{font-size:clamp(54px,11vw,83px)}body.letter-page .letter-ornament{right:0;top:105px;opacity:.3}body.letter-page #hello{padding:48px 0 100px}body.letter-page .inquiry-intro{margin:0 0 25px}body.letter-page .inquiry-intro h2{font-size:clamp(47px,10vw,69px)}body.letter-page .inquiry-side{margin:0;border-right:1px solid #af86746b}}
 @media(prefers-reduced-motion:reduce){html.from-door .letter-arrival-curtain{display:none;animation:none}html.from-door body.letter-page .letter-arrival-content,html.from-door body.letter-page #hello>.shell{animation:none}}
+
+/* Prominent mandatory-field headings */
+.inquiry-form .required-label{font-family:var(--nv-ui);font-size:13px;font-weight:700!important;letter-spacing:.015em;color:#fff0df}
+.inquiry-form .required-label b{font-weight:700;color:#efb890}

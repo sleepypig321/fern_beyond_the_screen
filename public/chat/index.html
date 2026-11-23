@@ -1,6 +1,6 @@
 <!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex,nofollow,noarchive"><meta name="referrer" content="no-referrer">
-<meta name="theme-color" content="#16090f"><link rel="icon" href="/assets/mushroom-mark.svg" type="image/svg+xml">
+<meta name="theme-color" content="#16090f"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Fern Chat"><link rel="manifest" href="/chat/manifest.webmanifest"><link rel="apple-touch-icon" href="/chat/icons/icon-192.png"><link rel="icon" href="/assets/mushroom-mark.svg" type="image/svg+xml">
 <link rel="stylesheet" href="/chat/chat.css"><title>Private chat | Fern, Beyond the Screen</title></head>
 <body><header class="chat-top"><a class="brand" href="/"><img src="/assets/mushroom-mark.svg" alt=""><strong>Fern, Beyond the Screen</strong></a><div class="presence"><span id="online-dot" class="dot"></span><span id="online-text">Checking availability…</span></div></header>
 <main class="chat-wrapper">
@@ -12,7 +12,25 @@
 <p id="login-status" role="status" class="status"></p><p class="foot">There's no public registration. You can only join after an approved inquiry and personal invitation.</p>
 <a href="/inquire/" class="text-link">Begin with a private introduction</a></section>
 <section id="private-conversation" class="conversation" hidden><div class="thread-heading"><div><span class="eyebrow">ONE-TO-ONE CORRESPONDENCE</span><h1 id="chat-title">Your private conversation</h1></div><button type="button" id="visitor-logout" class="subtle">Sign out</button></div>
+<div class="install-chat"><span>Keep our conversation close, right on your home screen.</span><button id="install-chat" type="button" class="subtle" hidden>Install private chat</button><button id="enable-chat-notices" type="button" class="subtle">Enable reply alerts</button></div>
 <div class="chat-online-note"><span id="online-dot-inner" class="dot"></span><span id="online-text-inner">Checking Fern's availability…</span></div>
+<details id="profile-panel" class="profile-panel">
+<summary><span>My private profile <small>Only you and Fern can see these details</small></span><span aria-hidden="true">＋</span></summary>
+<div class="profile-inside">
+<p class="profile-intro">Your profile begins with your approved introduction. Add a little more about yourself so Fern can remember what matters. All fields except your preferred name are optional.</p>
+<form id="profile-form" class="profile-form">
+<div class="profile-two">
+<label>Preferred name <b>*</b><input name="preferred_name" minlength="2" maxlength="60" required autocomplete="nickname" placeholder="What should Fern call you?"></label>
+<label>General city / region <small>(optional)</small><input name="region" maxlength="100" placeholder="Never share your full home address"></label>
+</div>
+<label>Work, studies or projects <small>(optional)</small><input name="occupation" maxlength="100" placeholder="What keeps you busy?"></label>
+<label>A little more about me <small>(optional)</small><textarea name="about" maxlength="700" rows="3" placeholder="What would you like Fern to know?"></textarea></label>
+<label>Interests & favorite things <small>(optional)</small><textarea name="interests" maxlength="400" rows="2" placeholder="Things you enjoy or care about"></textarea></label>
+<label>Things we could talk about <small>(optional)</small><textarea name="talking_points" maxlength="350" rows="2" placeholder="Ideas, questions, and shared interests"></textarea></label>
+<label>What I'm looking for <small>(optional)</small><textarea name="intentions" maxlength="350" rows="2" placeholder="What kind of connection do you hope to find?"></textarea></label>
+<div class="profile-controls"><button type="submit" class="primary">Save my profile</button><span id="profile-status" role="status" aria-live="polite"></span></div>
+</form><p class="profile-privacy">Your verified inquiry age and registration email remain attached to your account. Other visitors cannot view your profile.</p>
+</div></details>
 <div id="chat-log" class="chat-log" role="log" aria-live="polite" aria-label="Private messages"></div>
 <form id="chat-compose" class="compose"><label for="message-input">Your message</label>
 <textarea id="message-input" maxlength="1000" rows="3" required placeholder="Write something genuine…"></textarea>

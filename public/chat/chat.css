@@ -23,3 +23,23 @@ textarea{resize:vertical}input:focus-visible,textarea:focus-visible,button:focus
 .bubble.mine{align-self:flex-end;background:#5d3448}.bubble small{display:block;font-size:10px;color:#e3b9af;margin-top:7px}
 .compose{margin-top:25px}.compose-foot{display:flex;align-items:center;justify-content:space-between;gap:18px}.compose-foot span{color:#a9908d;font-size:11px}
 @media(max-width:600px){.chat-top{padding:13px}.brand strong{font-size:23px}.presence{font-size:10px}.center-panel{margin:8vh auto}.conversation{margin-top:30px}.thread-heading{align-items:center}.chat-log{height:45vh;min-height:290px}.compose-foot{align-items:stretch;flex-direction:column}.compose-foot button{width:100%}}
+
+/* Private profile notebook, visually integrated into correspondence. */
+.center-panel label,.profile-form label,.compose label{font-weight:650;color:#f5e0d1}
+.profile-panel{margin:20px 0 30px;border:1px solid var(--line);background:#2b101c80}
+.profile-panel summary{display:flex;justify-content:space-between;align-items:center;gap:12px;cursor:pointer;list-style:none;padding:17px 21px;font:500 19px/1.15 Grenze,Georgia,serif;color:#f8dcc5}
+.profile-panel summary::-webkit-details-marker{display:none}
+.profile-panel summary small{display:block;color:#cab0a6;font:400 11px/1.5 Jost,sans-serif;margin-top:4px}
+.profile-panel summary>span:last-child{font:400 23px Grenze,serif}
+.profile-panel[open] summary>span:last-child{transform:rotate(45deg)}
+.profile-inside{padding:18px 22px 27px;border-top:1px solid var(--line)}
+.profile-intro,.profile-privacy{font-size:12px;line-height:1.8;color:var(--muted);margin:2px 0 18px}
+.profile-privacy{margin:19px 0 0}
+.profile-form{display:grid;gap:15px}.profile-form label{font-size:12px;display:grid;gap:8px}
+.profile-form label small{display:inline;color:#baa7a0;font:400 10px Jost,sans-serif}
+.profile-form label b{color:#efba92}.profile-form .profile-two{display:grid;grid-template-columns:1fr 1fr;gap:15px}
+.profile-form input,.profile-form textarea{font-size:15px;background:#180b13;border-color:#a97b726b}
+.profile-controls{display:flex;align-items:center;flex-wrap:wrap;gap:15px}
+#profile-status{font-size:12px;color:#e9b6a7}
+.install-chat{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin:20px 0 10px;color:#d0b9ad;font-size:12px}.install-chat .subtle{font-size:11px}
+@media(max-width:620px){.profile-form .profile-two{grid-template-columns:1fr}.profile-inside{padding:16px}}
