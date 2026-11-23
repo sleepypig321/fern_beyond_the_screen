@@ -40,8 +40,26 @@ export class ChatHub extends DurableObject {
   this.db.exec("CREATE TABLE IF NOT EXISTS push_subscriptions(endpoint TEXT PRIMARY KEY,subscription TEXT NOT NULL,created_at INTEGER NOT NULL)");
   this.db.exec("CREATE TABLE IF NOT EXISTS chat_settings(key TEXT PRIMARY KEY,value TEXT NOT NULL)");
   this.db.exec("CREATE TABLE IF NOT EXISTS rate_limits(key TEXT PRIMARY KEY,count INTEGER NOT NULL,since INTEGER NOT NULL)");
+  // Additive tables retain existing inquiries, messages and established sessions.
+  this.db.exec("CREATE TABLE IF NOT EXISTS chat_profiles(user_id TEXT PRIMARY KEY,preferred_name TEXT NOT NULL DEFAULT '',region TEXT NOT NULL DEFAULT '',occupation TEXT NOT NULL DEFAULT '',about TEXT NOT NULL DEFAULT '',interests TEXT NOT NULL DEFAULT '',talking_points TEXT NOT NULL DEFAULT '',intentions TEXT NOT NULL DEFAULT '',updated_at INTEGER NOT NULL)");
+  this.db.exec("CREATE TABLE IF NOT EXISTS admin_profile_notes(user_id TEXT PRIMARY KEY,note TEXT NOT NULL DEFAULT '',updated_at INTEGER NOT NULL)");
  }
  rows(query,...args){return sqlRows(this.db,query,...args)}
+ profile(id){
+   const row=this.rows("SELECT u.id,u.name AS account_name,u.email,i.age,i.city,i.interests AS original_interests,i.connection AS original_connection,i.message AS original_message,i.created_at AS applied_at,p.preferred_name,p.region,p.occupation,p.about,p.interests,p.talking_points,p.intentions,p.updated_at AS profile_updated FROM chat_users u JOIN inquiries i ON i.id=u.id LEFT JOIN chat_profiles p ON p.user_id=u.id WHERE u.id=?",id)[0];
+   if(!row)return null;
+   return {
+     id:row.id,account_name:row.account_name,email:row.email,age:row.age,
+     original_region:row.city,original_interests:row.original_interests,
+     original_connection:row.original_connection,original_message:row.original_message,
+     applied_at:row.applied_at,
+     preferred_name:row.preferred_name||row.account_name,
+     region:row.region??row.city,occupation:row.occupation||"",
+     about:row.about||"",interests:row.interests??row.original_interests,
+     talking_points:row.talking_points??row.original_connection,
+     intentions:row.intentions||"",profile_updated:row.profile_updated||null
+   };
+ }
  async rate(request,purpose,max,ms){
   const visitorIp=request.headers.get("CF-Connecting-IP")||"anonymous";
   const key=purpose+":"+(await hex((this.env.ADMIN_PASSWORD||"private") + ":" + visitorIp)),when=t(),r=this.rows("SELECT count,since FROM rate_limits WHERE key=?",key)[0];
@@ -159,7 +177,7 @@ export class ChatHub extends DurableObject {
      if(thread){
        const id=thread[1],user=this.rows("SELECT id,name,status FROM chat_users WHERE id=?",id)[0];
        if(!user)return err(404,"Conversation not found.");
-       if(method==="GET")return json({ok:true,user,messages:this.rows("SELECT id,sender,body,created_at FROM messages WHERE thread_id=? ORDER BY id DESC LIMIT 180",id).reverse()});
+       if(method==="GET")return json({ok:true,user,profile:this.profile(id),private_note:this.rows("SELECT note FROM admin_profile_notes WHERE user_id=?",id)[0]?.note||"",messages:this.rows("SELECT id,sender,body,created_at FROM messages WHERE thread_id=? ORDER BY id DESC LIMIT 180",id).reverse()});
        if(method==="POST"){
          const d=await readJson(request),body=trimmed(d.message,1001);
          if(body.length<1||body.length>1000)return err(400,"Message must be 1–1000 characters.");
@@ -167,6 +185,16 @@ export class ChatHub extends DurableObject {
          this.db.exec("INSERT INTO messages(thread_id,sender,body,created_at) VALUES(?,'admin',?,?)",id,body,t());
          return json({ok:true});
        }
+     }
+     const notesRoute=path.match(/^\/api\/chat\/admin\/threads\/([a-f0-9-]{36})\/notes$/);
+     if(notesRoute&&method==="POST"){
+       const id=notesRoute[1];
+       if(!this.rows("SELECT id FROM chat_users WHERE id=?",id).length)return err(404,"Chat profile not found.");
+       const d=await readJson(request);
+       if(typeof d.note!=="string"||d.note.length>2000)return err(400,"Private notes must be under 2,000 characters.");
+       const note=d.note.trim();
+       this.db.exec("INSERT INTO admin_profile_notes(user_id,note,updated_at) VALUES(?,?,?) ON CONFLICT(user_id) DO UPDATE SET note=excluded.note,updated_at=excluded.updated_at",id,note,t());
+       return json({ok:true});
      }
      if(method==="GET"&&path==="/api/chat/admin/push-key")return json({ok:true,publicKey:this.env.VAPID_PUBLIC_KEY||null});
      if(method==="POST"&&path==="/api/chat/admin/push-subscribe"){
@@ -200,6 +228,8 @@ export class ChatHub extends DurableObject {
      if(this.rows("SELECT id FROM chat_users WHERE email=?",row.email).length)return err(409,"This email already has a chat account.");
      const salt=rand(),hash=await passwordHash(pass,salt);
      this.db.exec("INSERT INTO chat_users(id,email,name,salt,password_hash,created_at) VALUES(?,?,?,?,?,?)",row.id,row.email,row.name,salt,hash,t());
+     // Seed an editable profile from the applicant's own approved inquiry.
+     this.db.exec("INSERT OR IGNORE INTO chat_profiles(user_id,preferred_name,region,interests,talking_points,updated_at) SELECT id,name,city,interests,connection,? FROM inquiries WHERE id=?",t(),row.id);
      this.db.exec("UPDATE inquiries SET invite_used=1,invite_hash=NULL,updated_at=? WHERE id=?",t(),row.id);
      return json({ok:true,name:row.name},200,{"Set-Cookie":await this.newSession("visitor",row.id)});
    }
@@ -216,6 +246,31 @@ export class ChatHub extends DurableObject {
      const user=await this.session(request,"visitor");
      if(!user)return err(401,"Register through an approved invitation or sign in.");
      if(method==="GET"&&path==="/api/chat/visitor/me")return json({ok:true,name:user.name,online:this.online()});
+     if(method==="GET"&&path==="/api/chat/visitor/profile"){
+       const p=this.profile(user.id);
+       if(!p)return err(404,"Profile unavailable.");
+       // Profile details are restricted to this signed-in person and the administrator.
+       return json({ok:true,profile:{
+         preferred_name:p.preferred_name,region:p.region,occupation:p.occupation,
+         about:p.about,interests:p.interests,talking_points:p.talking_points,
+         intentions:p.intentions,age:p.age,email:p.email
+       }});
+     }
+     if(method==="POST"&&path==="/api/chat/visitor/profile"){
+       if(await this.rate(request,"profile-update:"+user.id,25,3600000))return err(429,"Too many profile edits. Please try again later.");
+       const d=await readJson(request);
+       if(!d||typeof d!=="object"||Array.isArray(d))return err(400,"Invalid profile.");
+       const limits={preferred_name:60,region:100,occupation:100,about:700,interests:400,talking_points:350,intentions:350};
+       const values={};
+       for(const [name,limit] of Object.entries(limits)){
+         if(typeof d[name]!=="string"||d[name].length>limit)return err(400,"Please check your profile fields and their length limits.");
+         values[name]=d[name].trim();
+       }
+       if(values.preferred_name.length<2)return err(400,"Please provide a name of at least two characters.");
+       this.db.exec("INSERT INTO chat_profiles(user_id,preferred_name,region,occupation,about,interests,talking_points,intentions,updated_at) VALUES(?,?,?,?,?,?,?,?,?) ON CONFLICT(user_id) DO UPDATE SET preferred_name=excluded.preferred_name,region=excluded.region,occupation=excluded.occupation,about=excluded.about,interests=excluded.interests,talking_points=excluded.talking_points,intentions=excluded.intentions,updated_at=excluded.updated_at",
+         user.id,values.preferred_name,values.region,values.occupation,values.about,values.interests,values.talking_points,values.intentions,t());
+       return json({ok:true,profile:this.profile(user.id)});
+     }
      if(method==="GET"&&path==="/api/chat/visitor/messages"){
        const after=Math.max(0,Math.min(999999999,Number(u.searchParams.get("after")||0)||0));
        return json({ok:true,online:this.online(),messages:this.rows("SELECT id,sender,body,created_at FROM messages WHERE thread_id=? AND id>? ORDER BY id ASC LIMIT 150",user.id,after)});
