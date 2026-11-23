@@ -56,7 +56,7 @@ An inquiry is submitted through `/inquire/letter/`, validated by Cloudflare Turn
 
 The administrator logs in at `/admin/` with the secret `ADMIN_PASSWORD`. Only the administrator can view submitted inquiries and photographs, **approve or decline** applicants, generate a one-time registration invitation, manage existing accounts, and reply through the inbox.
 
-Approved applicants receive an invitation by email (if Resend is configured), or the administrator can securely share the one-time link. Each link expires after seven days and works once. The applicant creates a password on `/chat/register/` and signs into `/chat/` afterward. There is no public self-registration page. The server enforces all approval rules; the front end does not grant access.
+Approved applicants receive an invitation by email (if EmailJS (or Resend fallback) is configured), or the administrator can securely share the one-time link. Each link expires after seven days and works once. The applicant creates a password on `/chat/register/` and signs into `/chat/` afterward. There is no public self-registration page. The server enforces all approval rules; the front end does not grant access.
 
 Chat messages are accessible only via authenticated sessions. This is **private but not end-to-end encrypted**. The administrator sees all messages; approved users see only their own thread. Green **Online** status reflects a live administrator heartbeat and switches off after the app stops checking in.
 
@@ -64,13 +64,17 @@ The admin dashboard is a browser-installable PWA. Push notifications require a V
 
 ### Cloudflare settings (do not put secrets in GitHub)
 
-- `ADMIN_PASSWORD`: long, random administrator password, **required** before admin login works.
-- `TURNSTILE_SITE_KEY`: site key for Cloudflare Turnstile widget on this domain.
-- `TURNSTILE_SECRET_KEY`: corresponding secret.
-- `RESEND_API_KEY`: optional API key for sending approval invitations and inquiry notices.
-- `INQUIRY_FROM_EMAIL`: a Resend-verified sender address; optional for admin inbox, needed for automated invitation emails.
-- `INQUIRY_TO_EMAIL`: optional destination for extra inquiry email notifications, as a secret.
-- `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `VAPID_SUBJECT`: required for background web push notifications. Use a `mailto:` contact address for the subject **inside the secret only**, not public website HTML.
+- `ADMIN_PASSWORD`: long, random administrator password.
+- `TURNSTILE_SITE_KEY` / `TURNSTILE_SECRET_KEY`: this site's Cloudflare Turnstile credentials.
+- `INQUIRY_TO_EMAIL`: private notification inbox for Fern. Enter this in this Worker's Cloudflare settings, not GitHub.
+- `EMAILJS_SERVICE_ID`: copy the service ID from the existing **Sites by Fern** Worker or EmailJS dashboard; store as a Cloudflare secret.
+- `EMAILJS_PUBLIC_KEY`: the existing EmailJS account public key, stored as a Worker secret.
+- `EMAILJS_PRIVATE_KEY`: optional private access key, if required by EmailJS security settings.
+- `EMAILJS_DECISION_TEMPLATE_ID`: the reused dynamic decision template (`template_kik3zps`), committed as a non-secret Wrangler variable.
+- `RESEND_API_KEY` and `INQUIRY_FROM_EMAIL`: optional Resend fallback only, no longer necessary when EmailJS is configured.
+- `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `VAPID_SUBJECT`: required for push notifications.
+
+These are separate Cloudflare Workers. They can share the same EmailJS service and templates but **secrets do not transfer automatically**. Enable non-browser API requests under EmailJS account security. The original decision template might still display Sites by Fern branding until adjusted in the EmailJS dashboard. Free-plan request quotas are shared across sites.
 
 The `CHAT_HUB` Durable Object binding and `ChatHub` SQLite class migration are defined in `wrangler.toml`. Cloudflare will provision this database on successful deployment. Until Turnstile is set up, inquiry submissions are disabled rather than falsely reporting a delivery.
 
@@ -81,9 +85,9 @@ The `CHAT_HUB` Durable Object binding and `ChatHub` SQLite class migration are d
 
 New private introductions trigger a styled notification email to the recipient configured in the Cloudflare Worker secret `INQUIRY_TO_EMAIL`. The email has a **Review this inquiry** link into the password-protected administrator inbox; it never allows approval directly from email. The photograph and full answers are accessed only after signing in.
 
-**Approve** sends a tailored, one-time registration invitation automatically to the applicant's email when Resend is configured. **Decline** sends a considerate personal response. The admin dashboard reports whether Resend accepted either email; without configured delivery, the approval link is still available for manual private sharing, and declines still revoke access without claiming a message was sent.
+**Approve** sends a tailored, one-time registration invitation automatically to the applicant's email when EmailJS (or the fallback) is configured. **Decline** sends a considerate personal response. The admin dashboard reports whether the configured email service accepted either email; without configured delivery, the approval link is still available for manual private sharing, and declines still revoke access without claiming a message was sent.
 
-To route inquiry notifications to the owner's preferred inbox, set `INQUIRY_TO_EMAIL` under the Cloudflare Worker settings to the correct recipient address. Keep that address private: do not put it in `wrangler.toml`, `README.md`, or client-side HTML. Set `RESEND_API_KEY` and `INQUIRY_FROM_EMAIL` with a verified sending domain before relying on automatic delivery. A notification on new inquiry is an additional convenience; the encrypted-transport admin login remains authoritative.
+For email automation, copy `EMAILJS_SERVICE_ID` and `EMAILJS_PUBLIC_KEY` to this Worker's variables and secrets, then optionally add `EMAILJS_PRIVATE_KEY`. Unlike the previous Resend-only setup, **EmailJS is now preferred** when configured. The same existing decision template handles new inquiry alerts, registration approvals, and courteous declines via `to_email`, `subject`, `message`, `action_url`, and `action_label`. The owner notification recipient is still `INQUIRY_TO_EMAIL`. If EmailJS rejects a request, the admin inbox retains the inquiry and the admin UI reports email failure rather than claiming delivery. Applicants' original photographs remain in the private inbox rather than email attachments.
 
 After registration, approved visitors are presented with the optional **Install private chat** guide. The visitor PWA and administrator PWA use different URL scopes and separate notifications.
 
