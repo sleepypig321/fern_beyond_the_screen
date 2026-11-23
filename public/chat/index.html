@@ -1,0 +1,21 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex,nofollow,noarchive"><meta name="referrer" content="no-referrer">
+<meta name="theme-color" content="#16090f"><link rel="icon" href="/assets/mushroom-mark.svg" type="image/svg+xml">
+<link rel="stylesheet" href="/chat/chat.css"><title>Private chat | Fern, Beyond the Screen</title></head>
+<body><header class="chat-top"><a class="brand" href="/"><img src="/assets/mushroom-mark.svg" alt=""><strong>Fern, Beyond the Screen</strong></a><div class="presence"><span id="online-dot" class="dot"></span><span id="online-text">Checking availability…</span></div></header>
+<main class="chat-wrapper">
+<section id="visitor-login" class="center-panel"><span class="eyebrow">A MORE PERSONAL CONVERSATION</span><h1>Welcome<br><em>back.</em></h1>
+<p>Private conversations are for approved introductions only. If Fern has invited you, sign in with the email from your application.</p>
+<form id="visitor-login-form"><label for="visitor-email">Email</label><input id="visitor-email" type="email" autocomplete="email" required>
+<label for="visitor-password">Password</label><input id="visitor-password" type="password" autocomplete="current-password" required>
+<button class="primary">Enter private chat</button></form>
+<p id="login-status" role="status" class="status"></p><p class="foot">There's no public registration. You can only join after an approved inquiry and personal invitation.</p>
+<a href="/inquire/" class="text-link">Begin with a private introduction</a></section>
+<section id="private-conversation" class="conversation" hidden><div class="thread-heading"><div><span class="eyebrow">ONE-TO-ONE CORRESPONDENCE</span><h1 id="chat-title">Your private conversation</h1></div><button type="button" id="visitor-logout" class="subtle">Sign out</button></div>
+<div class="chat-online-note"><span id="online-dot-inner" class="dot"></span><span id="online-text-inner">Checking Fern's availability…</span></div>
+<div id="chat-log" class="chat-log" role="log" aria-live="polite" aria-label="Private messages"></div>
+<form id="chat-compose" class="compose"><label for="message-input">Your message</label>
+<textarea id="message-input" maxlength="1000" rows="3" required placeholder="Write something genuine…"></textarea>
+<div class="compose-foot"><span>Private and visible only to you and Fern.</span><button type="submit" class="primary">Send message ↗</button></div></form>
+<p id="chat-status" role="status" class="status"></p></section>
+</main><script src="/chat/chat.js" defer></script></body></html>

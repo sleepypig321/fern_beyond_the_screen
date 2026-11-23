@@ -1,0 +1,25 @@
+@import url("https://fonts.googleapis.com/css2?family=Cormorant+Infant:ital,wght@0,400;0,500;1,400;1,500&family=Grenze:wght@400;500;600&family=Jost:wght@400;500;600&display=swap");
+:root{color-scheme:dark;--line:rgba(199,148,133,.43);--cream:#f5e5d9;--muted:#ceb7b2;--wine:#230d18;--gold:#dfad8f}
+*{box-sizing:border-box}html{scroll-behavior:smooth}body{min-height:100svh;margin:0;background:radial-gradient(ellipse at 75% 3%,#68314752,transparent 55%),#12080d;color:var(--cream);font:400 15px/1.7 Jost,Arial,sans-serif}
+body:before{content:"";pointer-events:none;position:fixed;inset:0;background:url("/assets/seed-of-life-black.svg") 94% 70%/min(60vw,720px) no-repeat;opacity:.13}
+body>*{position:relative}[hidden]{display:none!important}h1,h2,h3{font:400 clamp(49px,8vw,90px)/1 Grenze,serif;margin:0}em{font:italic 500 1em "Cormorant Infant",Georgia,serif;color:#eebbad}
+.chat-top{padding:19px clamp(20px,4vw,70px);border-bottom:1px solid var(--line);display:flex;justify-content:space-between;align-items:center;gap:18px;background:#140a10ee;min-height:84px}
+.brand{display:flex;align-items:center;gap:12px;color:inherit;text-decoration:none}.brand img{width:38px;height:38px}.brand strong{font:400 clamp(23px,3vw,34px)/1 Grenze,serif}
+.chat-top>a:last-child:not(.brand){color:var(--gold);font-size:12px}
+.center-panel{width:min(550px,calc(100% - 40px));margin:9vh auto 13vh}.eyebrow{color:var(--gold);text-transform:uppercase;letter-spacing:.22em;font:500 10px Jost,sans-serif}.center-panel h1{margin:22px 0 30px}.center-panel>p{color:var(--muted);font-size:15px;line-height:1.85}.center-panel form,.compose{display:grid;gap:12px;margin-top:30px}
+label{font-size:12px;color:#e9c9b8}input,textarea{padding:15px 17px;display:block;width:100%;min-width:0;background:#260f1a;color:var(--cream);border:1px solid var(--line);border-radius:0;font:400 16px/1.5 Jost,sans-serif}
+textarea{resize:vertical}input:focus-visible,textarea:focus-visible,button:focus-visible,a:focus-visible{outline:2px solid #f3ce9f;outline-offset:3px}
+.primary{padding:14px 24px;background:#cfad8e;color:#230e17;border:1px solid #edd1af;font:600 12px/1.4 Jost,sans-serif;letter-spacing:.1em;text-transform:uppercase;cursor:pointer}
+.primary:disabled{opacity:.5;cursor:wait}.primary:hover:not(:disabled){background:#f1dbbc}
+.status{color:#efc3b8;min-height:24px;font-size:13px}.foot{font-size:12px!important;color:#bba5a0!important;margin-top:25px}
+.text-link{font:500 12px Jost,sans-serif;color:#ecd1b8;text-decoration:underline;text-underline-offset:7px}
+.presence{display:flex;align-items:center;gap:9px;color:#e5c9c0;font-size:12px}.dot{width:10px;height:10px;flex:none;border-radius:50%;background:#80696c;display:inline-block}.dot.on{background:#49df95;box-shadow:0 0 12px #32d68a}
+.chat-wrapper{width:min(970px,calc(100% - 40px));margin:0 auto}.chat-wrapper .center-panel{width:min(560px,100%)}
+.conversation{margin:50px auto 95px}.thread-heading{display:flex;justify-content:space-between;align-items:start;gap:15px;padding:12px 0 27px;border-bottom:1px solid var(--line)}
+.thread-heading h1{font-size:clamp(43px,6vw,70px);margin-top:10px}.subtle{background:transparent;border:1px solid var(--line);color:#eed2c1;padding:9px 14px;font-size:12px;cursor:pointer}
+.chat-online-note{margin:18px 0;color:#d2b2ad;display:flex;gap:10px;align-items:center;font-size:12px}
+.chat-log{height:min(55vh,520px);min-height:300px;overflow-y:auto;padding:28px clamp(12px,3vw,30px);display:flex;flex-direction:column;gap:14px;border:1px solid var(--line);background:linear-gradient(135deg,#160a10,#270d19)}
+.bubble{border:1px solid #996f735d;padding:15px 17px;width:fit-content;max-width:min(83%,620px);background:#412031;align-self:flex-start;white-space:pre-wrap;overflow-wrap:anywhere}
+.bubble.mine{align-self:flex-end;background:#5d3448}.bubble small{display:block;font-size:10px;color:#e3b9af;margin-top:7px}
+.compose{margin-top:25px}.compose-foot{display:flex;align-items:center;justify-content:space-between;gap:18px}.compose-foot span{color:#a9908d;font-size:11px}
+@media(max-width:600px){.chat-top{padding:13px}.brand strong{font-size:23px}.presence{font-size:10px}.center-panel{margin:8vh auto}.conversation{margin-top:30px}.thread-heading{align-items:center}.chat-log{height:45vh;min-height:290px}.compose-foot{align-items:stretch;flex-direction:column}.compose-foot button{width:100%}}
