@@ -31,6 +31,21 @@ async function deliverPush(subscription, payload, ttl) {
   method:request.method,headers,body:request.body,redirect:"error",signal:AbortSignal.timeout(8000)
  });
 }
+async function testPush(env, subscription, url) {
+ if(!env.VAPID_PUBLIC_KEY||!env.VAPID_PRIVATE_KEY||!env.VAPID_SUBJECT)return "Push configuration is incomplete.";
+ try {
+  webpush.setVapidDetails(env.VAPID_SUBJECT,env.VAPID_PUBLIC_KEY,env.VAPID_PRIVATE_KEY);
+ } catch {
+  return "Push keys or contact address are invalid.";
+ }
+ try {
+  const response=await deliverPush(subscription,{title:"Fern · Notification test",body:"Notifications are reaching this device.",url,tag:"fern-push-test"},60);
+  return response.ok?"Test accepted by the push service. Check your device notifications.":"Push service rejected the test (HTTP "+response.status+").";
+ } catch(error) {
+  console.error("Push test failed",error.name,error.code);
+  return "The Worker could not send the push test ("+error.name+").";
+ }
+}
 async function passwordHash(password, salt, storedHash = passwordHashPrefix) {
  if (!storedHash.startsWith(passwordHashPrefix)) {
   // Preserve verification for any unprefixed hashes created by earlier versions.
@@ -246,7 +261,12 @@ export class ChatHub extends DurableObject {
        if(!validPush(d.subscription))return err(400,"Invalid browser push subscription.");
        const sub=d.subscription;
        this.db.exec("INSERT OR REPLACE INTO push_subscriptions(endpoint,subscription,created_at) VALUES(?,?,?)",sub.endpoint,JSON.stringify(sub),t());
-       return json({ok:true});
+       const testStatus=d.test===true
+         ?await this.rate(request,"admin-push-test",6,60000)
+           ?"Too many notification tests. Try again in a minute."
+           :await testPush(this.env,sub,"/admin/")
+         :undefined;
+       return json({ok:true,testStatus});
      }
      if(method==="POST"&&path==="/api/chat/admin/push-unsubscribe"){
        const d=await readJson(request);
@@ -324,7 +344,12 @@ export class ChatHub extends DurableObject {
        const d=await readJson(request),sub=d?.subscription;
        if(!validPush(sub))return err(400,"Invalid notification subscription.");
        this.db.exec("INSERT INTO visitor_push_subscriptions(endpoint,user_id,subscription,created_at) VALUES(?,?,?,?) ON CONFLICT(endpoint) DO UPDATE SET user_id=excluded.user_id,subscription=excluded.subscription,created_at=excluded.created_at",sub.endpoint,user.id,JSON.stringify(sub),t());
-       return json({ok:true});
+       const testStatus=d.test===true
+         ?await this.rate(request,"visitor-push-test",6,60000)
+           ?"Too many notification tests. Try again in a minute."
+           :await testPush(this.env,sub,"/chat/")
+         :undefined;
+       return json({ok:true,testStatus});
      }
      if(method==="POST"&&path==="/api/chat/visitor/push-unsubscribe"){
        const d=await readJson(request);

@@ -96,12 +96,12 @@ async function enableChatNotices(interactive){
     subscription=null;
   }
   if(!subscription)subscription=await reg.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:key.buffer});
-  await api("visitor/push-subscribe","POST",{subscription:subscription.toJSON()});
+  const result=await api("visitor/push-subscribe","POST",{subscription:subscription.toJSON(),test:interactive});
   if(interactive&&notificationPreference){
    try{localStorage.setItem(notificationPreference,"on");}catch{}
   }
   button.textContent="Reply alerts enabled ✓";
-  if(interactive)status.textContent="Your phone can notify you when Fern replies.";
+  if(interactive)status.textContent=result.testStatus||"Notification subscription saved.";
  }catch(error){if(interactive)status.textContent=error.message}
 }
 E("enable-chat-notices").addEventListener("click",()=>enableChatNotices(true));

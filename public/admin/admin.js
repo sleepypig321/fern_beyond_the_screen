@@ -190,9 +190,9 @@ async function enableAdminNotices(interactive){
     subscription=null;
   }
   if(!subscription)subscription=await registration.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:key.buffer});
-  await api("admin/push-subscribe","POST",{subscription:subscription.toJSON()});
+  const result=await api("admin/push-subscribe","POST",{subscription:subscription.toJSON(),test:interactive});
   el("push-button").textContent="Notifications on ✓";
-  if(interactive)toast("New inquiries and messages can now notify your phone.");
+  if(interactive)toast(result.testStatus||"Notification subscription saved.");
  }catch(x){if(interactive)toast(x.message)}
 }
 el("push-button").addEventListener("click",()=>enableAdminNotices(true));
