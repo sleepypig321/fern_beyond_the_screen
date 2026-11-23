@@ -90,10 +90,53 @@ async function showThread(id,scroll){
  try{
   const d=await api("admin/threads/"+id+"/messages");
   if(selected!==id||mode!=="conversations")return;
-  const stampMessages=JSON.stringify(d.messages);
+  const stampMessages=JSON.stringify({messages:d.messages,profile:d.profile,private_note:d.private_note});
   if(prevMessages===stampMessages&&detail.querySelector(".chat-compose"))return;
   prevMessages=stampMessages;
-  detail.replaceChildren();detail.append(node("span","overline","PRIVATE CONVERSATION"),node("h2","",d.user.name),node("p","meta",d.user.status==="active"?"Approved account":"Account disabled"));
+  detail.replaceChildren();detail.append(node("span","overline","PRIVATE CONVERSATION"),node("h2","",d.profile?.preferred_name||d.user.name),node("p","meta",d.user.status==="active"?"Approved account · Private profile available":"Account disabled"));
+  const p=d.profile||{},profileCard=node("details","admin-profile-card");
+  profileCard.open=true;
+  const summary=node("summary","","Their profile · Your conversation reference");
+  const profileBody=node("div","admin-profile-body");
+  const infoRows=[
+    ["Preferred name",p.preferred_name],["Age from inquiry",p.age!=null?String(p.age):""],
+    ["Email",p.email],["General region",p.region],["Work, studies or projects",p.occupation],
+    ["More about them",p.about],["Interests & favorites",p.interests],
+    ["Conversation topics",p.talking_points],["What they're looking for",p.intentions]
+  ];
+  for(const [label,value] of infoRows){
+    if(!value)continue;
+    const row=node("div","admin-profile-row");
+    row.append(node("strong","",label),node("p","",String(value)));
+    profileBody.append(row);
+  }
+  const original=node("details","original-introduction");
+  original.append(node("summary","","Original approved introduction"));
+  const originalText=node("div","original-fields");
+  for(const [label,value] of [["Name on inquiry",p.account_name],["Region submitted",p.original_region],["Original interests",p.original_interests],["Initial connection idea",p.original_connection],["Introduction message",p.original_message]]){
+    if(!value)continue;
+    const row=node("div","admin-profile-row");row.append(node("strong","",label),node("p","",String(value)));originalText.append(row);
+  }
+  original.append(originalText);
+  profileBody.append(original);
+  const noteForm=node("form","profile-notes");
+  const noteLabel=node("label","","Your private notes · visible only to you");
+  const noteArea=node("textarea");
+  noteArea.maxLength=2000;noteArea.rows=3;
+  noteArea.value=d.private_note||"";
+  noteArea.placeholder="A favorite topic, something to remember, or a future question…";
+  noteArea.setAttribute("aria-label","Your private notes about this conversation");
+  const noteBtn=node("button","outline","Save my notes");noteBtn.type="submit";
+  const noteStatus=node("small","notes-feedback","");
+  noteForm.append(noteLabel,noteArea,noteBtn,noteStatus);
+  noteForm.addEventListener("submit",async event=>{
+    event.preventDefault();noteBtn.disabled=true;
+    try{await api("admin/threads/"+id+"/notes","POST",{note:noteArea.value});noteStatus.textContent="Private notes saved.";prevMessages=""}
+    catch(error){noteStatus.textContent=error.message}
+    finally{noteBtn.disabled=false}
+  });
+  profileBody.append(noteForm);profileCard.append(summary,profileBody);
+  detail.append(profileCard);
   const log=node("div","chat-messages");log.setAttribute("role","log");
   for(const msg of d.messages){const bubble=node("div","bubble"+(msg.sender==="admin"?" mine":""));bubble.append(node("div","",msg.body),node("small","",(msg.sender==="admin"?"You":"Visitor")+" · "+stamp(msg.created_at)));log.append(bubble)}
   if(!d.messages.length)log.append(node("p","empty","No messages yet."));
