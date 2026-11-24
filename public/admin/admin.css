@@ -48,3 +48,10 @@ h1,h2,h3{font-family:Grenze,Georgia,serif;font-weight:400;line-height:1.08;margi
 .decision-dialog h2{font:400 clamp(34px,7vw,46px)/1.05 Grenze,Georgia,serif;margin:8px 0 12px}
 .decision-dialog p{color:var(--muted);margin:0}
 .decision-actions{display:flex;justify-content:flex-end;flex-wrap:wrap;gap:10px;margin-top:24px}
+
+/* On phones, introductions use the full document scroll instead of a two-card nested viewport. */
+@media(max-width:600px){
+  .admin-layout:has(#tab-inquiries.active) .list-pane{max-height:none;overflow:visible;min-height:0}
+  .admin-layout:has(#tab-inquiries.active) .item-list{max-height:none;overflow:visible}
+  .admin-layout:has(#tab-inquiries.active) .detail-pane:has(.detail:empty){display:none}
+}
