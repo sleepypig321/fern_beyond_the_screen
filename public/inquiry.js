@@ -60,7 +60,7 @@
       const response=await fetch("/api/inquiry",{method:"POST",body:new FormData(form),headers:{"Accept":"application/json"}});
       const result=await response.json();
       if(!response.ok||!result.ok)throw Error(result.error||"Unable to send the form.");
-      report("Your introduction has been sent privately. Thank you!",false);
+      report("Your introduction has been sent privately. Thank you! If approved, watch your inbox and Spam or Junk folder for an invitation.",false);
       form.reset();clearPhoto();
     }catch(error){report(error.message||"Delivery failed. Please try again.",true);}
     finally{

@@ -395,3 +395,64 @@ body[data-page="my-world"] .favorite-moment p{
   body[data-page="my-world"] .favorite-moments{grid-template-columns:1fr;gap:24px;margin-top:54px;padding-top:31px}
   body[data-page="my-world"] .favorite-moment{grid-template-columns:30px 1fr;gap:12px;padding:18px 0}
 }
+
+
+/* Mobile responsive repair for public pages: the Nocturne desktop grid declarations
+   were overriding earlier interior.css mobile styles, squeezing hero copy. */
+@media(max-width:800px){
+  .mini-nav-inner{gap:12px;min-width:0}
+  .mini-wordmark{flex:1 1 auto;min-width:0;white-space:normal}
+  .mini-wordmark>span:last-child{min-width:0}
+  .mini-wordmark strong{display:block;font-size:clamp(18px,4.4vw,24px);line-height:1.05}
+  .mini-wordmark small{font-size:8px;letter-spacing:.08em;line-height:1.4}
+  .mini-links{display:none}
+  .mini-mobile{display:block;flex:0 0 auto}
+  .mini-mobile summary{white-space:nowrap}
+  .interior-hero .hero-layout{display:grid;grid-template-columns:minmax(0,1fr);gap:0;align-items:start}
+  .interior-hero .hero-layout>div:first-child{min-width:0;width:100%;max-width:100%}
+  .interior-hero .hero-ornament{display:none}
+  .interior-hero .hero-kicker{display:block;max-width:100%}
+  .interior-hero .hero-deck{max-width:100%;overflow-wrap:normal}
+  .editorial-grid,.portrait-grid,body[data-page="about"] .editorial-grid{grid-template-columns:minmax(0,1fr);gap:clamp(24px,6vw,48px)}
+  .editorial-grid>*,.portrait-grid>*,.chapter-notes>*{min-width:0}
+  body[data-page="about"] .editorial-grid>div:first-child{position:static;top:auto;padding-top:12px}
+  .portrait-holder{max-width:100%}
+  .hero-grid,.fern-deck-layout{grid-template-columns:minmax(0,1fr)}
+}
+@media(max-width:700px){
+  .site-shell,.shell{width:calc(100% - 36px);max-width:1200px}
+  .interior-hero{min-height:0;padding:42px 0 48px}
+  .interior-hero h1{font-size:clamp(49px,12vw,72px);line-height:1.06;letter-spacing:-.018em;margin:18px 0}
+  .interior-hero .hero-deck{font-size:clamp(23px,6vw,30px);line-height:1.35;margin:14px 0 0}
+  .interior-content h2{font-size:clamp(40px,10vw,63px)}
+  .page-content{padding:58px 0 80px}
+  .editorial-grid{grid-template-columns:minmax(0,1fr)}
+  body[data-page="my-world"] .chapter-notes{grid-template-columns:minmax(0,1fr)}
+  body[data-page="my-world"] .chapter-note:nth-child(n){padding:22px 0;border-left:0}
+  .chapter-cards{grid-template-columns:minmax(0,1fr)}
+  .chapter-card{grid-column:auto;padding:26px 16px;min-height:0}
+  .faq-list details:nth-child(even){margin-left:0}
+  body[data-page="connection"] .chapter-note{grid-template-columns:38px minmax(0,1fr);gap:14px}
+  .portrait-holder{min-height:330px}
+  .final-cta{padding:70px 0 85px}
+  .final-cta h2{font-size:clamp(46px,11vw,72px)}
+  .final-cta p{font-size:clamp(20px,5.7vw,26px)}
+  .form-grid,.inquiry-wrap{grid-template-columns:minmax(0,1fr)}
+  .inquiry-intro h2{font-size:clamp(46px,11vw,70px)}
+  .inquiry-side{margin-top:0}
+  body[data-page="my-world"] .favorite-moments{grid-template-columns:minmax(0,1fr)}
+}
+@media(max-width:390px){
+  .mini-nav-inner{gap:8px}
+  .mini-mush{width:29px;height:29px;flex-basis:29px}
+  .mini-wordmark{gap:8px}
+  .mini-wordmark strong{font-size:18px}
+  .mini-wordmark small{font-size:7px}
+  .mini-mobile summary{font-size:12px;padding:8px}
+  .interior-hero h1{font-size:clamp(46px,12vw,55px)}
+  .hero-deck{font-size:22px}
+}
+/* Approval email reminder beneath the inquiry form. */
+body.letter-page .approval-email-note{margin:0;padding:14px 17px;border-left:2px solid #dcb593;background:rgba(110,46,66,.22);color:#f0d7ca;font:400 13px/1.65 var(--nv-ui)}
+body.letter-page .approval-email-note strong{color:#ffe0bf}
+
