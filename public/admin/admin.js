@@ -113,10 +113,14 @@ async function showThread(id,scroll){
  try{
   const d=await api("admin/threads/"+id+"/messages");
   if(selected!==id||mode!=="conversations")return;
-  const stampMessages=JSON.stringify({messages:d.messages,profile:d.profile,private_note:d.private_note});
+  const stampMessages=JSON.stringify({messages:d.messages,profile:d.profile,private_note:d.private_note,status:d.user.status});
   if(prevMessages===stampMessages&&detail.querySelector(".chat-compose"))return;
   prevMessages=stampMessages;
-  detail.replaceChildren();detail.append(node("span","overline","PRIVATE CONVERSATION"),node("h2","",d.profile?.preferred_name||d.user.name),node("p","meta",d.user.status==="active"?"Approved account · Private profile available":"Account disabled"));
+  detail.replaceChildren();detail.append(node("span","overline","PRIVATE CONVERSATION"),node("h2","",d.profile?.preferred_name||d.user.name),node("p","meta",d.user.status==="active"?"Approved account · Private profile available":d.user.status==="inactive"?"Automatically closed after 72 hours without messages":"Account disabled"));
+   if(d.user.status==="inactive")detail.append(btn("Reopen conversation access","outline",async()=>{
+    if(!await confirmDecision("Reopen this conversation?","Restore this account for another 72 hours. They can sign in using their existing password.","Reopen access"))return;
+    try{const result=await api("admin/threads/"+id+"/restore","POST",{});prevMessages="";await refresh();toast(result.message)}catch(error){toast(error.message)}
+   }));
   const p=d.profile||{},profileCard=node("details","admin-profile-card");
   profileCard.open=true;
   const summary=node("summary","","Their profile · Your conversation reference");

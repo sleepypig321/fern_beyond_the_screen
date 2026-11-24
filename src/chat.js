@@ -5,6 +5,7 @@ import { buildPushPayload } from "@block65/webcrypto-web-push";
 const json=(o,s=200,headers={})=>new Response(JSON.stringify(o),{status:s,headers:{"Content-Type":"application/json; charset=utf-8","Cache-Control":"no-store","X-Content-Type-Options":"nosniff",...headers}});
 const err=(s,m)=>json({ok:false,error:m},s);
 const t=()=>Date.now();
+const CHAT_INACTIVITY_MS=72*60*60*1000;
 const rand=()=>btoa(String.fromCharCode(...crypto.getRandomValues(new Uint8Array(32)))).replaceAll("+","-").replaceAll("/","_").replace(/=+$/,"");
 const hex=async value=>Array.from(new Uint8Array(await crypto.subtle.digest("SHA-256",new TextEncoder().encode(value))),v=>v.toString(16).padStart(2,"0")).join("");
 const validId=s=>typeof s==="string"&&/^[a-f0-9-]{36}$/.test(s);
@@ -97,6 +98,30 @@ export class ChatHub extends DurableObject {
   this.db.exec("CREATE TABLE IF NOT EXISTS admin_profile_notes(user_id TEXT PRIMARY KEY,note TEXT NOT NULL DEFAULT '',updated_at INTEGER NOT NULL)");
   this.db.exec("CREATE TABLE IF NOT EXISTS visitor_push_subscriptions(endpoint TEXT PRIMARY KEY,user_id TEXT NOT NULL,subscription TEXT NOT NULL,created_at INTEGER NOT NULL)");
   this.db.exec("CREATE INDEX IF NOT EXISTS visitor_push_by_user ON visitor_push_subscriptions(user_id)");
+  // Existing accounts get a full grace period after first deployment.
+  this.db.exec("CREATE TABLE IF NOT EXISTS chat_activity(user_id TEXT PRIMARY KEY,last_contact_at INTEGER NOT NULL)");
+  this.db.exec("INSERT OR IGNORE INTO chat_activity(user_id,last_contact_at) SELECT id,? FROM chat_users",t());
+ }
+ expireInactiveChats(){
+  const expired=this.rows("SELECT u.id FROM chat_users u JOIN chat_activity a ON a.user_id=u.id WHERE u.status='active' AND a.last_contact_at<=?",t()-CHAT_INACTIVITY_MS);
+  if(!expired.length)return 0;
+  this.ctx.storage.transactionSync(()=>{
+   for(const {id} of expired){
+    this.db.exec("UPDATE chat_users SET status='inactive' WHERE id=? AND status='active'",id);
+    this.db.exec("DELETE FROM sessions WHERE user_id=?",id);
+    this.db.exec("DELETE FROM visitor_push_subscriptions WHERE user_id=?",id);
+   }
+  });
+  return expired.length;
+ }
+ async scheduleInactivityAlarm(){
+  const earliest=this.rows("SELECT MIN(a.last_contact_at) AS last_at FROM chat_activity a JOIN chat_users u ON u.id=a.user_id WHERE u.status='active'")[0]?.last_at;
+  if(earliest==null){await this.ctx.storage.deleteAlarm();return;}
+  await this.ctx.storage.setAlarm(Number(earliest)+CHAT_INACTIVITY_MS);
+ }
+ async alarm(){
+  this.expireInactiveChats();
+  await this.scheduleInactivityAlarm();
  }
  rows(query,...args){return sqlRows(this.db,query,...args)}
  profileComplete(id){
@@ -177,6 +202,8 @@ export class ChatHub extends DurableObject {
  async fetch(request){
   const u=new URL(request.url),path=u.pathname,method=request.method;
   try{
+   const expired=this.expireInactiveChats();
+   if(expired || await this.ctx.storage.getAlarm()===null)await this.scheduleInactivityAlarm();
    // Public: the only side channel is whether Fern is currently available.
    if(method==="GET"&&path==="/api/chat/presence")return json({ok:true,online:this.online()});
    if(method==="GET"&&path==="/api/chat/config")return json({ok:true,registration:"approval-only",pushDiagnostics:true,pushReady:Boolean(this.env.VAPID_PUBLIC_KEY&&this.env.VAPID_PRIVATE_KEY&&this.env.VAPID_SUBJECT)});
@@ -246,6 +273,18 @@ export class ChatHub extends DurableObject {
      if(method==="GET"&&path==="/api/chat/admin/threads"){
        return json({ok:true,threads:this.rows("SELECT u.id,u.name,u.email,u.status,COALESCE((SELECT body FROM messages WHERE thread_id=u.id ORDER BY id DESC LIMIT 1),'') AS last_message,COALESCE((SELECT MAX(created_at) FROM messages WHERE thread_id=u.id),u.created_at) AS last_at,COALESCE((SELECT COUNT(*) FROM messages WHERE thread_id=u.id AND sender='visitor'),0) AS incoming FROM chat_users u ORDER BY last_at DESC LIMIT 160")});
      }
+     const restore=path.match(/^\/api\/chat\/admin\/threads\/([0-9a-f-]{36})\/restore$/);
+     if(method==="POST"&&restore){
+       const id=restore[1],user=this.rows("SELECT id,status FROM chat_users WHERE id=?",id)[0];
+       if(!user)return err(404,"Conversation not found.");
+       if(user.status!=="inactive")return err(409,"Only conversations closed for inactivity can be reopened.");
+       this.ctx.storage.transactionSync(()=>{
+        this.db.exec("UPDATE chat_users SET status='active' WHERE id=? AND status='inactive'",id);
+        this.db.exec("INSERT INTO chat_activity(user_id,last_contact_at) VALUES(?,?) ON CONFLICT(user_id) DO UPDATE SET last_contact_at=excluded.last_contact_at",id,t());
+       });
+       await this.scheduleInactivityAlarm();
+       return json({ok:true,message:"Access restored. They can sign in again with their existing password."});
+     }
      const thread=path.match(/^\/api\/chat\/admin\/threads\/([0-9a-f-]{36})\/messages$/);
      if(thread){
        const id=thread[1],user=this.rows("SELECT id,name,status FROM chat_users WHERE id=?",id)[0];
@@ -255,7 +294,12 @@ export class ChatHub extends DurableObject {
          const d=await readJson(request),body=trimmed(d.message,1001);
          if(body.length<1||body.length>1000)return err(400,"Message must be 1–1000 characters.");
          if(user.status!=="active")return err(403,"This conversation is closed.");
-         this.db.exec("INSERT INTO messages(thread_id,sender,body,created_at) VALUES(?,'admin',?,?)",id,body,t());
+         const now=t();
+         this.ctx.storage.transactionSync(()=>{
+          this.db.exec("INSERT INTO messages(thread_id,sender,body,created_at) VALUES(?,'admin',?,?)",id,body,now);
+          this.db.exec("INSERT INTO chat_activity(user_id,last_contact_at) VALUES(?,?) ON CONFLICT(user_id) DO UPDATE SET last_contact_at=excluded.last_contact_at",id,now);
+         });
+         await this.scheduleInactivityAlarm();
          this.ctx.waitUntil(this.announceVisitor(id));
          return json({ok:true});
        }
@@ -316,17 +360,20 @@ export class ChatHub extends DurableObject {
      const sessionToken=rand(),sessionHash=await hex(sessionToken),maxAge=30*86400;
      const invitationHash=await hex(inv);
      try {
-       return this.ctx.storage.transactionSync(()=>{
+       const response=this.ctx.storage.transactionSync(()=>{
          const current=this.rows("SELECT invite_expires,invite_used FROM inquiries WHERE id=? AND invite_hash=? AND status='approved'",row.id,invitationHash)[0];
          if(!current||current.invite_used||current.invite_expires<t())return err(410,"The invitation is invalid or expired.");
          if(this.rows("SELECT id FROM chat_users WHERE email=?",row.email).length)return err(409,"This email already has a chat account. Try signing in.");
          const now=t();
          this.db.exec("INSERT INTO chat_users(id,email,name,salt,password_hash,created_at) VALUES(?,?,?,?,?,?)",row.id,row.email,row.name,salt,hash,now);
+         this.db.exec("INSERT INTO chat_activity(user_id,last_contact_at) VALUES(?,?)",row.id,now);
          this.db.exec("INSERT OR IGNORE INTO chat_profiles(user_id,preferred_name,region,interests,talking_points,updated_at) SELECT id,name,city,interests,connection,? FROM inquiries WHERE id=?",now,row.id);
          this.db.exec("INSERT INTO sessions(hash,kind,user_id,expires) VALUES(?,?,?,?)",sessionHash,"visitor",row.id,now+maxAge*1000);
          this.db.exec("UPDATE inquiries SET invite_used=1,invite_hash=NULL,updated_at=? WHERE id=?",now,row.id);
          return json({ok:true,name:row.name},200,{"Set-Cookie":cookie("fern_chat_session",sessionToken,maxAge)});
        });
+       if(response.ok)await this.scheduleInactivityAlarm();
+       return response;
      } catch(error) {
        console.error("Chat registration storage failed", error.name, error.code, error.message);
        return err(500,"Registration could not save the account. Your invitation can be retried.");
@@ -411,7 +458,12 @@ export class ChatHub extends DurableObject {
        if(await this.rate(request,"chat-message:"+user.id,12,60000))return err(429,"Too many messages. Please wait a moment.");
        const d=await readJson(request),body=trimmed(d.message,1001);
        if(body.length<1||body.length>1000)return err(400,"Messages must be 1–1000 characters.");
-       this.db.exec("INSERT INTO messages(thread_id,sender,body,created_at) VALUES(?,'visitor',?,?)",user.id,body,t());
+       const now=t();
+       this.ctx.storage.transactionSync(()=>{
+        this.db.exec("INSERT INTO messages(thread_id,sender,body,created_at) VALUES(?,'visitor',?,?)",user.id,body,now);
+        this.db.exec("INSERT INTO chat_activity(user_id,last_contact_at) VALUES(?,?) ON CONFLICT(user_id) DO UPDATE SET last_contact_at=excluded.last_contact_at",user.id,now);
+       });
+       await this.scheduleInactivityAlarm();
        this.ctx.waitUntil(this.announce({title:"New private chat message",body:user.name+" sent you a message.",url:"/admin/?chat="+user.id,tag:"fern-chat-"+user.id}));
        return json({ok:true});
      }
