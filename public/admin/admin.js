@@ -26,10 +26,12 @@ el("refresh").addEventListener("click",refresh);
 el("tab-inquiries").addEventListener("click",()=>changeMode("inquiries"));
 el("tab-conversations").addEventListener("click",()=>changeMode("conversations"));
 function blank(){
- detail.replaceChildren();const shell=node("div","empty-state");
- const img=node("img");img.src="/assets/mushroom-mark.svg";img.alt="";
- shell.append(img,node("h2","",mode==="inquiries"?"Choose a letter.":"Private correspondence."),node("p","",mode==="inquiries"?"Read an introduction and decide who can register.":"Select a conversation to reply."));
- detail.append(shell)
+  detail.replaceChildren();
+  if(mode==="inquiries")return; // No overlay obstructing the introduction list.
+  const shell=node("div","empty-state");
+  const img=node("img");img.src="/assets/mushroom-mark.svg";img.alt="";
+  shell.append(img,node("h2","","Private correspondence."),node("p","","Select a conversation to reply."));
+  detail.append(shell);
 }
 function changeMode(value){mode=value;selected="";prevMessages="";el("tab-inquiries").classList.toggle("active",value==="inquiries");el("tab-conversations").classList.toggle("active",value==="conversations");el("list-label").textContent=value==="inquiries"?"PRIVATE INTRODUCTIONS":"APPROVED CONVERSATIONS";renderList();blank()}
 function renderList(){
