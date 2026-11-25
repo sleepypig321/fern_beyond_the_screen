@@ -69,6 +69,17 @@ function showInquiry(id,scroll){
  if(d.status==="approved"&&!d.invite_used)ops.append(btn("Issue new invitation","outline",()=>approve(d)));
  detail.append(ops);
  if(d.status==="approved")detail.append(node("p","meta",d.invite_used?"Registered to chat":"Approved · awaiting registration"));
+ if(d.status==="approved"){
+  const activity=node("section","profile-card");
+  activity.append(node("h3","","Registration activity"));
+  const milestone=(label,value)=>activity.append(node("p","meta",label+": "+(value?stamp(value):"Not recorded")));
+  milestone("Invitation validated",d.registration_checked_at);
+  milestone("Registration submitted",d.registration_attempted_at);
+  if(d.registration_failed_at)activity.append(node("p","message","Last technical failure: "+(d.registration_failure||"Unknown")+" · "+stamp(d.registration_failed_at)));
+  activity.append(node("p","meta",d.invite_used?"Account created":"Account not yet created"));
+  if(!d.registration_checked_at&&!d.invite_used)activity.append(node("p","meta","No invitation validation recorded since tracking began. This does not prove the email was unopened."));
+  detail.append(activity);
+ }
  if(scroll&&innerWidth<600)detail.scrollIntoView({behavior:"smooth",block:"start"})
 }
 function confirmDecision(title, description, action, destructive=false){
