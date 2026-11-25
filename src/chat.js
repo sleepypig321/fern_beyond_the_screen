@@ -94,6 +94,7 @@ export class ChatHub extends DurableObject {
   this.db.exec("CREATE TABLE IF NOT EXISTS rate_limits(key TEXT PRIMARY KEY,count INTEGER NOT NULL,since INTEGER NOT NULL)");
   this.db.exec("CREATE TABLE IF NOT EXISTS confirmed_chat_profiles(user_id TEXT PRIMARY KEY)");
   this.db.exec("CREATE TABLE IF NOT EXISTS registration_activity (inquiry_id TEXT PRIMARY KEY, checked_at INTEGER, attempted_at INTEGER, failed_at INTEGER, failure TEXT)");
+  this.db.exec("CREATE TABLE IF NOT EXISTS visitor_presence(user_id TEXT PRIMARY KEY,last_seen INTEGER NOT NULL)");
   // Additive tables retain existing inquiries, messages and established sessions.
   this.db.exec("CREATE TABLE IF NOT EXISTS chat_profiles(user_id TEXT PRIMARY KEY,preferred_name TEXT NOT NULL DEFAULT '',region TEXT NOT NULL DEFAULT '',occupation TEXT NOT NULL DEFAULT '',about TEXT NOT NULL DEFAULT '',interests TEXT NOT NULL DEFAULT '',talking_points TEXT NOT NULL DEFAULT '',intentions TEXT NOT NULL DEFAULT '',updated_at INTEGER NOT NULL)");
   this.db.exec("CREATE TABLE IF NOT EXISTS admin_profile_notes(user_id TEXT PRIMARY KEY,note TEXT NOT NULL DEFAULT '',updated_at INTEGER NOT NULL)");
@@ -272,7 +273,7 @@ export class ChatHub extends DurableObject {
        return json({ok:true,token:invite,name:row.name,email:row.email,expires});
      }
      if(method==="GET"&&path==="/api/chat/admin/threads"){
-       return json({ok:true,threads:this.rows("SELECT u.id,u.name,u.email,u.status,COALESCE((SELECT body FROM messages WHERE thread_id=u.id ORDER BY id DESC LIMIT 1),'') AS last_message,COALESCE((SELECT MAX(created_at) FROM messages WHERE thread_id=u.id),u.created_at) AS last_at,COALESCE((SELECT COUNT(*) FROM messages WHERE thread_id=u.id AND sender='visitor'),0) AS incoming FROM chat_users u ORDER BY last_at DESC LIMIT 160")});
+       return json({ok:true,threads:this.rows("SELECT u.id,u.name,u.email,u.status,COALESCE((SELECT body FROM messages WHERE thread_id=u.id ORDER BY id DESC LIMIT 1),'') AS last_message,COALESCE((SELECT MAX(created_at) FROM messages WHERE thread_id=u.id),u.created_at) AS last_at,COALESCE((SELECT COUNT(*) FROM messages WHERE thread_id=u.id AND sender='visitor'),0) AS incoming,(SELECT last_seen FROM visitor_presence WHERE user_id=u.id) AS last_seen FROM chat_users u ORDER BY last_at DESC LIMIT 160")});
      }
      const restore=path.match(/^\/api\/chat\/admin\/threads\/([0-9a-f-]{36})\/restore$/);
      if(method==="POST"&&restore){
@@ -406,6 +407,10 @@ export class ChatHub extends DurableObject {
    if(path.startsWith("/api/chat/visitor/")){
      const user=await this.session(request,"visitor");
      if(!user)return err(401,"Register through an approved invitation or sign in.");
+     if(method==="POST"&&path==="/api/chat/visitor/heartbeat"){
+       this.db.exec("INSERT INTO visitor_presence(user_id,last_seen) VALUES(?,?) ON CONFLICT(user_id) DO UPDATE SET last_seen=excluded.last_seen",user.id,t());
+       return json({ok:true});
+     }
      if(method==="GET"&&path==="/api/chat/visitor/me")return json({ok:true,id:user.id,name:user.name,online:this.online(),profileComplete:this.profileComplete(user.id)});
      if(method==="GET"&&path==="/api/chat/visitor/push-key")return json({ok:true,publicKey:this.env.VAPID_PUBLIC_KEY||null});
      if(method==="POST"&&path==="/api/chat/visitor/push-subscribe"){
