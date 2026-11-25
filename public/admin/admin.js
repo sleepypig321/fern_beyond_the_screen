@@ -41,7 +41,14 @@ function renderList(){
    const item=btn("","item"+(selected===r.id?" active":""),()=>{selected=r.id;renderList();mode==="inquiries"?showInquiry(r.id,true):showThread(r.id,true)});
    const header=node("span","row");
    header.append(node("strong","",r.name),node("small","state",r.status));
-   item.append(header,node("small","",stamp(mode==="inquiries"?r.created_at:r.last_at)),node("span","preview",mode==="inquiries"?r.message:(r.last_message||"No messages yet")));
+   if(mode==="conversations"){
+     const online=r.status==="active"&&r.last_seen&&Date.now()-Number(r.last_seen)<75000;
+     const indicator=node("small","",online?"● Online":r.last_seen?"○ Offline · last active "+stamp(r.last_seen):"○ Offline · no activity recorded");
+     if(online)indicator.style.color="#65c98b";
+     item.append(header,indicator);
+   }
+   if(mode==="inquiries")item.append(header);
+   item.append(node("small","",stamp(mode==="inquiries"?r.created_at:r.last_at)),node("span","preview",mode==="inquiries"?r.message:(r.last_message||"No messages yet")));
    list.append(item)
  }
 }
