@@ -53,6 +53,9 @@
     event.preventDefault();
     if(!ready||send.disabled)return;
     if(!form.reportValidity())return;
+    const email=form.elements.email.value.trim().toLowerCase();
+    const confirmation=form.elements.email_confirm.value.trim().toLowerCase();
+    if(email!==confirmation){report("Your email addresses do not match. Please double-check both entries.",true);form.elements.email_confirm.focus();return;}
     const selected=file.files && file.files[0];
     if(!selected||selected.size>3*1024*1024){report("Please attach a photo under 3 MB.",true);return;}
     send.disabled=true;report("Sending your introduction privately…",false);
