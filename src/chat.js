@@ -93,6 +93,7 @@ export class ChatHub extends DurableObject {
   this.db.exec("CREATE TABLE IF NOT EXISTS chat_settings(key TEXT PRIMARY KEY,value TEXT NOT NULL)");
   this.db.exec("CREATE TABLE IF NOT EXISTS rate_limits(key TEXT PRIMARY KEY,count INTEGER NOT NULL,since INTEGER NOT NULL)");
   this.db.exec("CREATE TABLE IF NOT EXISTS confirmed_chat_profiles(user_id TEXT PRIMARY KEY)");
+  this.db.exec("CREATE TABLE IF NOT EXISTS registration_activity (inquiry_id TEXT PRIMARY KEY, checked_at INTEGER, attempted_at INTEGER, failed_at INTEGER, failure TEXT)");
   // Additive tables retain existing inquiries, messages and established sessions.
   this.db.exec("CREATE TABLE IF NOT EXISTS chat_profiles(user_id TEXT PRIMARY KEY,preferred_name TEXT NOT NULL DEFAULT '',region TEXT NOT NULL DEFAULT '',occupation TEXT NOT NULL DEFAULT '',about TEXT NOT NULL DEFAULT '',interests TEXT NOT NULL DEFAULT '',talking_points TEXT NOT NULL DEFAULT '',intentions TEXT NOT NULL DEFAULT '',updated_at INTEGER NOT NULL)");
   this.db.exec("CREATE TABLE IF NOT EXISTS admin_profile_notes(user_id TEXT PRIMARY KEY,note TEXT NOT NULL DEFAULT '',updated_at INTEGER NOT NULL)");
@@ -239,7 +240,7 @@ export class ChatHub extends DurableObject {
        return json({ok:true,online:this.online()});
      }
      if(method==="GET"&&path==="/api/chat/admin/inquiries"){
-       return json({ok:true,inquiries:this.rows("SELECT id,name,email,age,city,interests,connection,message,status,created_at,updated_at,invite_expires,invite_used FROM inquiries ORDER BY created_at DESC LIMIT 120")});
+       return json({ok:true,inquiries:this.rows("SELECT id,name,email,age,city,interests,connection,message,status,created_at,updated_at,invite_expires,invite_used,(SELECT checked_at FROM registration_activity WHERE inquiry_id=inquiries.id) AS registration_checked_at,(SELECT attempted_at FROM registration_activity WHERE inquiry_id=inquiries.id) AS registration_attempted_at,(SELECT failed_at FROM registration_activity WHERE inquiry_id=inquiries.id) AS registration_failed_at,(SELECT failure FROM registration_activity WHERE inquiry_id=inquiries.id) AS registration_failure FROM inquiries ORDER BY created_at DESC LIMIT 120")});
      }
      const photoMatch=path.match(/^\/api\/chat\/admin\/inquiries\/([0-9a-f-]{36})\/photo$/);
      if(method==="GET"&&photoMatch){
@@ -340,6 +341,7 @@ export class ChatHub extends DurableObject {
      if(input.length<32||input.length>150)return err(404,"Invitation not found.");
      const row=this.rows("SELECT id,name,email,invite_expires,invite_used FROM inquiries WHERE invite_hash=? AND status='approved'",await hex(input))[0];
      if(!row||row.invite_used||row.invite_expires<t())return err(410,"Invitation has expired or was already used.");
+     this.db.exec("INSERT INTO registration_activity(inquiry_id,checked_at) VALUES(?,?) ON CONFLICT(inquiry_id) DO UPDATE SET checked_at=COALESCE(checked_at,excluded.checked_at)",row.id,t());
      return json({ok:true,name:row.name});
    }
    if(method==="POST"&&path==="/api/chat/register"){
@@ -348,12 +350,15 @@ export class ChatHub extends DurableObject {
      if(typeof pass!=="string"||pass.length<12||pass.length>128||typeof inv!=="string"||inv.length<32||inv.length>150)return err(400,"A valid invitation and a password of 12–128 characters are required.");
      const row=this.rows("SELECT id,name,email,invite_expires,invite_used FROM inquiries WHERE invite_hash=? AND status='approved'",await hex(inv))[0];
      if(!row||row.invite_used||row.invite_expires<t())return err(410,"The invitation is invalid or expired.");
-     if(this.rows("SELECT id FROM chat_users WHERE email=?",row.email).length)return err(409,"This email already has a chat account.");
+     this.db.exec("INSERT INTO registration_activity(inquiry_id,attempted_at) VALUES(?,?) ON CONFLICT(inquiry_id) DO UPDATE SET attempted_at=excluded.attempted_at,failed_at=NULL,failure=NULL",row.id,t());
+     const recordFailure=(reason)=>this.db.exec("UPDATE registration_activity SET failed_at=?,failure=? WHERE inquiry_id=?",t(),reason,row.id);
+     if(this.rows("SELECT id FROM chat_users WHERE email=?",row.email).length){recordFailure("Account already exists");return err(409,"This email already has a chat account.");}
      const salt=rand();
      let hash;
      try {
        hash=await passwordHash(pass,salt);
      } catch(error) {
+       recordFailure("Password hashing failed");
        console.error("Chat registration password hashing failed", error.name, error.code);
        return err(500,"Registration could not create your password hash. No account was created.");
      }
@@ -375,6 +380,7 @@ export class ChatHub extends DurableObject {
        if(response.ok)await this.scheduleInactivityAlarm();
        return response;
      } catch(error) {
+       recordFailure("Account storage or session setup failed");
        console.error("Chat registration storage failed", error.name, error.code, error.message);
        return err(500,"Registration could not save the account. Your invitation can be retried.");
      }
