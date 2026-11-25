@@ -118,6 +118,8 @@ async function inquiry(request, env, ctx) {
   const age = Number(ageValue);
   const city = clean(form.get("city"), 100);
   const email = clean(form.get("email"), 254);
+  const emailConfirm = clean(form.get("email_confirm"), 254);
+  if(!validEmail(email)||!validEmail(emailConfirm)||email.toLowerCase()!==emailConfirm.toLowerCase())return json({ok:false,error:"Please enter a valid email address twice and make sure both entries match."},400);
   const interests = clean(form.get("interests"), 400);
   const connection = clean(form.get("connection"), 300);
   const message = clean(form.get("message"), 1300);
