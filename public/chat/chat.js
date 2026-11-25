@@ -155,6 +155,7 @@ async function messages(){
 async function restore(){
  try{const me=await api("visitor/me");active=true;login.hidden=true;conversation.hidden=false;E("chat-title").textContent="Hello, "+me.name+".";presence(me.online);notificationPreference="fern-chat-alerts:"+me.id;
   setChatUnlocked(Boolean(me.profileComplete));
+  void heartbeat();
   await loadProfile();
   if(me.profileComplete)startChat();
  }
@@ -181,7 +182,9 @@ E("chat-compose").onsubmit=async event=>{
  catch(e){status.textContent=e.message}
  finally{button.disabled=false}
 };
+async function heartbeat(){if(active&&document.visibilityState==="visible"){try{await api("visitor/heartbeat","POST",{})}catch{}}}
+setInterval(heartbeat,25000);
 setInterval(()=>{if(document.visibilityState==="visible")messages()},6500);
-document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="visible")messages()});
+document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="visible"){void heartbeat();messages()}});
 restore();
 })();
